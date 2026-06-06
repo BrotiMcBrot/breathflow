@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "BreathFlow",
+    "slug": "breathflow",
+    "scheme": "breathflow",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "splash": { "backgroundColor": "#0a0a0f" },
+    "ios": { "supportsTablet": false, "bundleIdentifier": "com.breathflow.app" },
+    "android": { "package": "com.breathflow.app" },
+    "plugins": ["expo-router", "expo-font"],
+    "experiments": { "typedRoutes": true },
+    "extra": { "eas": { "projectId": "e8190c16-7ae3-4feb-9df6-6d498495eb36" } }
+  }
+}

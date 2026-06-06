@@ -1,128 +1,90 @@
-import React, { useEffect, useMemo } from 'react';
-import {
-  Canvas,
-  Path,
-  Circle,
-  useValue,
-  runTiming,
-  Skia,
-  useComputedValue,
-  vec,
-  Paint,
-  DashPathEffect,
-} from '@shopify/react-native-skia';
-import { useWindowDimensions } from 'react-native';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { View } from 'react-native';
+import Svg, { Path, Circle, Line } from 'react-native-svg';
 import { BreathTechnique } from '../types';
 import { buildBreathPath, getTotalSeconds, getPosAtTime } from '../utils/pathGeometry';
 
 interface Props {
   technique: BreathTechnique;
   isPlaying: boolean;
-  onPhaseChange?: (phaseName: string, secsRemaining: number) => void;
   onRoundComplete?: (round: number) => void;
 }
 
-const COLORS = {
-  trail: '#1a2a3a',
-  trailActive: '#378ADD',
-  dot: '#85B7EB',
-  dotCore: '#185FA5',
-  midLine: '#1e2e3e',
-};
-
-export function BreathCanvas({ technique, isPlaying, onPhaseChange, onRoundComplete }: Props) {
-  const { width } = useWindowDimensions();
-  const canvasWidth = width - 48;
+export function BreathCanvas({ technique, isPlaying, onRoundComplete }: Props) {
+  const canvasWidth = 320;
   const canvasHeight = 280;
 
   const pts = useMemo(
     () => buildBreathPath(technique.phases, canvasWidth, canvasHeight),
-    [technique, canvasWidth, canvasHeight]
+    [technique]
   );
 
   const totalSecs = getTotalSeconds(technique.phases);
-  const progress = useValue(0);
+  const [t, setT] = useState(0);
+  const startTimeRef = useRef<number | null>(null);
+  const animRef = useRef<number | null>(null);
+  const roundRef = useRef(0);
 
-  // build full trail path
-  const trailPath = useMemo(() => {
-    const p = Skia.Path.Make();
-    if (pts.length < 2) return p;
-    p.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) p.lineTo(pts[i].x, pts[i].y);
-    return p;
+  useEffect(() => {
+    if (isPlaying) {
+      startTimeRef.current = Date.now() - t * 1000;
+      const tick = () => {
+        const elapsed = (Date.now() - startTimeRef.current!) / 1000;
+        const newRound = Math.floor(elapsed / totalSecs);
+        if (newRound > roundRef.current) {
+          roundRef.current = newRound;
+          onRoundComplete?.(newRound);
+        }
+        setT(elapsed % totalSecs);
+        animRef.current = requestAnimationFrame(tick);
+      };
+      animRef.current = requestAnimationFrame(tick);
+    } else {
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+    }
+    return () => { if (animRef.current) cancelAnimationFrame(animRef.current); };
+  }, [isPlaying]);
+
+  const trailPathD = useMemo(() => {
+    if (pts.length < 2) return '';
+    let d = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 1; i < pts.length; i++) d += ` L ${pts[i].x} ${pts[i].y}`;
+    return d;
   }, [pts]);
 
-  // active path up to current progress
-  const activePath = useComputedValue(() => {
-    const t = progress.current * totalSecs;
+  const activePathD = useMemo(() => {
+    if (pts.length < 2) return '';
     const pos = getPosAtTime(pts, technique.phases, t);
-    const p = Skia.Path.Make();
-    if (pts.length < 2) return p;
-    p.moveTo(pts[0].x, pts[0].y);
-
+    let d = `M ${pts[0].x} ${pts[0].y}`;
     let elapsed = 0;
     for (let i = 0; i < technique.phases.length; i++) {
       const phase = technique.phases[i];
       if (t <= elapsed + phase.seconds) {
-        p.lineTo(pos.x, pos.y);
+        d += ` L ${pos.x} ${pos.y}`;
         break;
       }
-      p.lineTo(pts[i + 1].x, pts[i + 1].y);
+      d += ` L ${pts[i + 1].x} ${pts[i + 1].y}`;
       elapsed += phase.seconds;
     }
-    return p;
-  }, [progress]);
+    return d;
+  }, [t, pts]);
 
-  const dotX = useComputedValue(() => {
-    const t = progress.current * totalSecs;
-    return getPosAtTime(pts, technique.phases, t).x;
-  }, [progress]);
-
-  const dotY = useComputedValue(() => {
-    const t = progress.current * totalSecs;
-    return getPosAtTime(pts, technique.phases, t).y;
-  }, [progress]);
-
-  useEffect(() => {
-    if (isPlaying) {
-      const remaining = (1 - progress.current) * totalSecs;
-      runTiming(progress, 1, { duration: remaining * 1000 }, () => {
-        progress.current = 0;
-        onRoundComplete?.(1);
-        if (isPlaying) {
-          runTiming(progress, 1, { duration: totalSecs * 1000 });
-        }
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPlaying]);
-
+  const pos = getPosAtTime(pts, technique.phases, t);
   const midY = canvasHeight / 2;
 
   return (
-    <Canvas style={{ width: canvasWidth, height: canvasHeight }}>
-      {/* mid baseline */}
-      <Path
-        path={`M 24 ${midY} L ${canvasWidth - 24} ${midY}`}
-        strokeWidth={0.5}
-        style="stroke"
-        color={COLORS.midLine}
-      >
-        <DashPathEffect intervals={[6, 6]} />
-      </Path>
-
-      {/* ghost trail */}
-      <Path path={trailPath} strokeWidth={2} style="stroke" color={COLORS.trail} strokeJoin="round" strokeCap="round" />
-
-      {/* active trace */}
-      <Path path={activePath} strokeWidth={3} style="stroke" color={COLORS.trailActive} strokeJoin="round" strokeCap="round" />
-
-      {/* dot outer */}
-      <Circle cx={dotX} cy={dotY} r={10} color={COLORS.dot} opacity={0.35} />
-      {/* dot mid */}
-      <Circle cx={dotX} cy={dotY} r={7} color={COLORS.dot} />
-      {/* dot core */}
-      <Circle cx={dotX} cy={dotY} r={4} color={COLORS.dotCore} />
-    </Canvas>
+    <View style={{ width: canvasWidth, height: canvasHeight }}>
+      <Svg width={canvasWidth} height={canvasHeight}>
+        <Line x1={24} y1={midY} x2={canvasWidth - 24} y2={midY}
+          stroke="#1e2e3e" strokeWidth={0.5} strokeDasharray="6,6" />
+        <Path d={trailPathD} stroke="#1a2a3a" strokeWidth={2} fill="none"
+          strokeLinejoin="round" strokeLinecap="round" />
+        <Path d={activePathD} stroke="#378ADD" strokeWidth={3} fill="none"
+          strokeLinejoin="round" strokeLinecap="round" />
+        <Circle cx={pos.x} cy={pos.y} r={12} fill="#85B7EB" opacity={0.2} />
+        <Circle cx={pos.x} cy={pos.y} r={7} fill="#85B7EB" />
+        <Circle cx={pos.x} cy={pos.y} r={4} fill="#185FA5" />
+      </Svg>
+    </View>
   );
 }
