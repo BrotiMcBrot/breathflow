@@ -1,0 +1,15 @@
+node_modules/
+.expo/
+dist/
+web-build/
+*.tsbuildinfo
+.DS_Store
+*.pem
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
