@@ -67,3 +67,7 @@ Länge = `sekunden × PX_PER_SEC`, dann auf Canvas-Breite skaliert.
 ## Mitmachen
 
 Issues und PRs willkommen. Lizenz: MIT.
+
+## Unterstütze mich
+https://ko-fi.com/brotimcbrot
+
