@@ -1,99 +1,125 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  Alert,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { format } from 'date-fns';
-import { de } from 'date-fns/locale';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { useBreathStore } from '../store/breathStore';
 import { BreathSession } from '../types';
+import { useTheme, Colors } from '../theme';
 
-function SessionRow({ session }: { session: BreathSession }) {
-  const mins = Math.floor(session.durationSeconds / 60);
-  const secs = session.durationSeconds % 60;
-  return (
-    <View style={styles.sessionRow}>
-      <View style={styles.sessionLeft}>
-        <Text style={styles.sessionName}>{session.techniqueName}</Text>
-        <Text style={styles.sessionDate}>
-          {format(session.startedAt, 'EEE, dd. MMM · HH:mm', { locale: de })}
-        </Text>
-      </View>
-      <View style={styles.sessionRight}>
-        <Text style={styles.sessionDur}>
-          {mins > 0 ? `${mins}m ` : ''}{secs}s
-        </Text>
-        {session.roundsCompleted > 0 && (
-          <Text style={styles.sessionRounds}>{session.roundsCompleted} Runden</Text>
-        )}
-      </View>
-    </View>
-  );
+function formatDate(ts: number): string {
+  const d = new Date(ts);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return 'Heute';
+  if (d.toDateString() === yesterday.toDateString()) return 'Gestern';
+  return d.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+function formatTime(ts: number): string {
+  return new Date(ts).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDuration(secs: number): string {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  if (m === 0) return `${s}s`;
+  if (s === 0) return `${m} min`;
+  return `${m}m ${s}s`;
+}
+
+type ListItem =
+  | { type: 'header'; key: string; label: string }
+  | { type: 'session'; key: string; session: BreathSession };
+
+function buildList(sessions: BreathSession[]): ListItem[] {
+  const items: ListItem[] = [];
+  let lastDate = '';
+  for (const session of sessions) {
+    const label = formatDate(session.startedAt);
+    if (label !== lastDate) {
+      items.push({ type: 'header', key: `h_${session.startedAt}`, label });
+      lastDate = label;
+    }
+    items.push({ type: 'session', key: session.id, session });
+  }
+  return items;
 }
 
 export default function StatsScreen() {
-  const router = useRouter();
+  const c = useTheme();
   const { sessions, getStats, clearSessions } = useBreathStore();
   const stats = getStats();
+  const listData = buildList(sessions);
 
   const handleClear = () => {
-    Alert.alert(
-      'Verlauf löschen',
-      'Alle Sessions werden gelöscht. Fortfahren?',
-      [
-        { text: 'Abbrechen', style: 'cancel' },
-        { text: 'Löschen', style: 'destructive', onPress: clearSessions },
-      ]
-    );
+    Alert.alert('Verlauf löschen', 'Alle Sessions werden gelöscht.', [
+      { text: 'Abbrechen', style: 'cancel' },
+      { text: 'Löschen', style: 'destructive', onPress: clearSessions },
+    ]);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backTxt}>← Zurück</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Statistiken</Text>
-        <TouchableOpacity onPress={handleClear}>
-          <Text style={styles.clearTxt}>Löschen</Text>
-        </TouchableOpacity>
+        <Text style={[styles.title, { color: c.text }]}>Verlauf</Text>
+        {sessions.length > 0 && (
+          <TouchableOpacity onPress={handleClear}>
+            <Text style={{ color: c.danger, fontSize: 13 }}>Löschen</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      <View style={styles.statsGrid}>
-        <View style={styles.statCard}>
-          <Text style={styles.statVal}>{stats.totalSessions}</Text>
-          <Text style={styles.statLbl}>Sessions</Text>
+      {stats.totalSessions > 0 && (
+        <View style={styles.statsGrid}>
+          {[
+            { val: stats.totalSessions, lbl: 'Sessions' },
+            { val: stats.totalMinutes, lbl: 'Minuten' },
+            { val: stats.streak, lbl: 'Tage Streak' },
+          ].map(({ val, lbl }) => (
+            <View key={lbl} style={[styles.statCard, { backgroundColor: c.surface, borderColor: c.border }]}>
+              <Text style={[styles.statVal, { color: c.text }]}>{val}</Text>
+              <Text style={[styles.statLbl, { color: c.textMuted }]}>{lbl}</Text>
+            </View>
+          ))}
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statVal}>{stats.totalMinutes}</Text>
-          <Text style={styles.statLbl}>Minuten</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statVal}>{stats.streak}</Text>
-          <Text style={styles.statLbl}>Tage Streak</Text>
-        </View>
-      </View>
-
-      <Text style={styles.sectionLabel}>Verlauf</Text>
+      )}
 
       {sessions.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyTxt}>Noch keine Sessions.</Text>
-          <Text style={styles.emptySubTxt}>Los geht's!</Text>
+          <Text style={styles.emptyEmoji}>🫁</Text>
+          <Text style={[styles.emptyTxt, { color: c.textMuted }]}>Noch keine Sessions</Text>
+          <Text style={[styles.emptySub, { color: c.textFaint }]}>Starte eine Übung und schließe sie ab</Text>
         </View>
       ) : (
         <FlatList
-          data={sessions}
-          keyExtractor={(s) => s.id}
+          data={listData}
+          keyExtractor={(item) => item.key}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => <SessionRow session={item} />}
+          renderItem={({ item }) => {
+            if (item.type === 'header') return (
+              <View style={styles.dateHeader}>
+                <Text style={[styles.dateHeaderTxt, { color: c.textFaint }]}>{item.label}</Text>
+              </View>
+            );
+            const { session } = item;
+            return (
+              <View style={[styles.row, { borderBottomColor: c.surface }]}>
+                <View style={styles.rowLeft}>
+                  <View style={[styles.dot, { backgroundColor: c.accent }]} />
+                  <View>
+                    <Text style={[styles.rowName, { color: c.textSec }]}>{session.techniqueName}</Text>
+                    <Text style={[styles.rowTime, { color: c.textMuted }]}>{formatTime(session.startedAt)}</Text>
+                  </View>
+                </View>
+                <View style={styles.rowRight}>
+                  <Text style={[styles.rowDur, { color: c.textMuted }]}>{formatDuration(session.durationSeconds)}</Text>
+                  {session.roundsCompleted > 0 && (
+                    <Text style={[styles.rowRounds, { color: c.textFaint }]}>{session.roundsCompleted} Zyklen</Text>
+                  )}
+                </View>
+              </View>
+            );
+          }}
         />
       )}
     </SafeAreaView>
@@ -101,55 +127,25 @@ export default function StatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0f' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#1a1a2e',
-  },
-  backBtn: { padding: 4 },
-  backTxt: { color: '#446', fontSize: 14 },
-  headerTitle: { color: '#ddd', fontSize: 16, fontWeight: '500' },
-  clearTxt: { color: '#663333', fontSize: 13 },
-  statsGrid: {
-    flexDirection: 'row',
-    paddingHorizontal: 24,
-    paddingVertical: 24,
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#0f0f1a',
-    borderRadius: 14,
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 0.5,
-    borderColor: '#1a1a2e',
-  },
-  statVal: { color: '#fff', fontSize: 28, fontWeight: '300' },
-  statLbl: { color: '#446', fontSize: 11, marginTop: 4 },
-  sectionLabel: { color: '#446', fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', paddingHorizontal: 24, marginBottom: 12 },
-  list: { paddingHorizontal: 24, paddingBottom: 40 },
-  sessionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#0f0f1a',
-  },
-  sessionLeft: { flex: 1 },
-  sessionName: { color: '#ccc', fontSize: 15 },
-  sessionDate: { color: '#446', fontSize: 12, marginTop: 2 },
-  sessionRight: { alignItems: 'flex-end' },
-  sessionDur: { color: '#668', fontSize: 14, fontVariant: ['tabular-nums'] },
-  sessionRounds: { color: '#334', fontSize: 11, marginTop: 2 },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 80 },
-  emptyTxt: { color: '#446', fontSize: 18 },
-  emptySubTxt: { color: '#334', fontSize: 14, marginTop: 8 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 20, paddingBottom: 16 },
+  title: { fontSize: 22, fontWeight: '300', letterSpacing: 2 },
+  statsGrid: { flexDirection: 'row', paddingHorizontal: 24, gap: 10, marginBottom: 24 },
+  statCard: { flex: 1, borderRadius: 14, padding: 14, alignItems: 'center', borderWidth: 0.5 },
+  statVal: { fontSize: 26, fontWeight: '300' },
+  statLbl: { fontSize: 11, marginTop: 3 },
+  list: { paddingHorizontal: 24, paddingBottom: 100 },
+  dateHeader: { paddingTop: 20, paddingBottom: 8 },
+  dateHeaderTxt: { fontSize: 12, letterSpacing: 1, textTransform: 'uppercase' },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 0.5 },
+  rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+  rowName: { fontSize: 15 },
+  rowTime: { fontSize: 12, marginTop: 2 },
+  rowRight: { alignItems: 'flex-end' },
+  rowDur: { fontSize: 14, fontVariant: ['tabular-nums'] },
+  rowRounds: { fontSize: 11, marginTop: 2 },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 100 },
+  emptyEmoji: { fontSize: 48, marginBottom: 16, opacity: 0.3 },
+  emptyTxt: { fontSize: 18 },
+  emptySub: { fontSize: 14, marginTop: 8 },
 });
