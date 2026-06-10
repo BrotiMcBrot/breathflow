@@ -16,6 +16,7 @@ export default function TabsLayout() {
   const c = useTheme();
   return (
     <Tabs
+      initialRouteName="index"
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
