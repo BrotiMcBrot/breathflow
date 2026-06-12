@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -12,17 +12,9 @@ import { getTotalSeconds } from '../utils/pathGeometry';
 import { playPhaseSound, setupAudio, unloadSound } from '../utils/soundManager';
 import { BreathSession } from '../types';
 import { useTheme } from '../theme';
+import { useT, useLang, localizeTechnique } from '../i18n';
 
 type SessionState = 'idle' | 'intro' | 'running' | 'paused' | 'outro';
-
-const INTRO_STEPS = [
-  { text: 'Finde eine bequeme Position', secs: 3 },
-  { text: 'Schultern locker, Rücken aufrecht', secs: 3 },
-  { text: 'Gleich geht es los...', secs: 2 },
-  { text: '3', secs: 1 },
-  { text: '2', secs: 1 },
-  { text: '1', secs: 1 },
-];
 
 export default function SessionScreen() {
   const params = useLocalSearchParams<{
@@ -31,10 +23,26 @@ export default function SessionScreen() {
   }>();
   const router = useRouter();
   const c = useTheme();
+  const t = useT();
+  const lang = useLang();
   const insets = useSafeAreaInsets();
   const { getTechniqueById, addSession, getStats } = useBreathStore();
   const { soundType, spotifyEnabled, spotifyUri, introOutroEnabled, hapticsEnabled } = useSettingsStore();
-  const technique = getTechniqueById(params.id!);
+
+  const rawTechnique = getTechniqueById(params.id!);
+  const technique = useMemo(
+    () => (rawTechnique ? localizeTechnique(rawTechnique, lang) : undefined),
+    [rawTechnique, lang]
+  );
+
+  const INTRO_STEPS = useMemo(() => [
+    { text: t.introStep1, secs: 3 },
+    { text: t.introStep2, secs: 3 },
+    { text: t.introStep3, secs: 2 },
+    { text: '3', secs: 1 },
+    { text: '2', secs: 1 },
+    { text: '1', secs: 1 },
+  ], [t]);
 
   const mode = (params.mode as 'time' | 'rounds') ?? 'time';
   const targetTotalSecs = (parseInt(params.targetMinutes ?? '5') * 60) + parseInt(params.targetSeconds ?? '0');
@@ -64,13 +72,9 @@ export default function SessionScreen() {
     return () => deactivateKeepAwake();
   }, [state]);
 
-  // Intro sequence
   useEffect(() => {
     if (state !== 'intro') return;
-    if (introStep >= INTRO_STEPS.length) {
-      startRunning();
-      return;
-    }
+    if (introStep >= INTRO_STEPS.length) { startRunning(); return; }
     fadeAnim.setValue(0);
     Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
     if (hapticsEnabled && INTRO_STEPS[introStep].text.length <= 2) {
@@ -81,7 +85,6 @@ export default function SessionScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, introStep]);
 
-  // Main tick
   useEffect(() => {
     if (state !== 'running' || !technique) return;
     if (!startTimeRef.current) startTimeRef.current = Date.now();
@@ -89,27 +92,23 @@ export default function SessionScreen() {
     intervalRef.current = setInterval(() => {
       const totalSecs = getTotalSeconds(technique.phases);
       const sessionElapsed = Math.floor((Date.now() - sessionStartRef.current!) / 1000);
-      const t = ((Date.now() - startTimeRef.current!) / 1000) % totalSecs;
+      const tt = ((Date.now() - startTimeRef.current!) / 1000) % totalSecs;
       setElapsed(sessionElapsed);
 
-      if (mode === 'time' && sessionElapsed >= targetTotalSecs) {
-        finishSession(true);
-        return;
-      }
+      if (mode === 'time' && sessionElapsed >= targetTotalSecs) { finishSession(true); return; }
 
       let el = 0;
       for (const phase of technique.phases) {
-        if (t <= el + phase.seconds) {
+        if (tt <= el + phase.seconds) {
           if (phase.label !== lastPhaseRef.current) {
             lastPhaseRef.current = phase.label;
             playPhaseSound(soundType);
             if (hapticsEnabled) {
-              const isInhale = phase.direction === 'up';
-              Haptics.impactAsync(isInhale ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(phase.direction === 'up' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
             }
           }
           setCurrentPhase(phase.label);
-          setSecsRemaining(Math.ceil(el + phase.seconds - t));
+          setSecsRemaining(Math.ceil(el + phase.seconds - tt));
           break;
         }
         el += phase.seconds;
@@ -129,7 +128,7 @@ export default function SessionScreen() {
 
   const handleStart = useCallback(() => {
     if (spotifyEnabled && spotifyUri) Linking.openURL(spotifyUri).catch(() => {});
-    if (introOutroEnabled) {
+    if (introOutroEnabled && !sessionStartRef.current) {
       sessionStartRef.current = Date.now();
       setIntroStep(0);
       setState('intro');
@@ -162,26 +161,16 @@ export default function SessionScreen() {
     });
   }, [technique, addSession, router, introOutroEnabled, hapticsEnabled]);
 
-  const handlePause = useCallback(() => {
-    setState('paused');
-    setShowStopModal(true);
-  }, []);
-
+  const handlePause = useCallback(() => { setState('paused'); setShowStopModal(true); }, []);
   const handleXPress = useCallback(() => {
-    if (state === 'running' || state === 'paused') {
-      setState('paused');
-      setShowStopModal(true);
-    } else {
-      router.back();
-    }
+    if (state === 'running' || state === 'paused') { setState('paused'); setShowStopModal(true); }
+    else router.back();
   }, [state, router]);
 
   const handleRoundComplete = useCallback((r: number) => {
     roundsRef.current = r;
     setRounds(r);
-    if (mode === 'rounds' && r >= targetRounds) {
-      setTimeout(() => finishSession(true), 400);
-    }
+    if (mode === 'rounds' && r >= targetRounds) setTimeout(() => finishSession(true), 400);
   }, [mode, targetRounds, finishSession]);
 
   if (!technique) return null;
@@ -190,58 +179,47 @@ export default function SessionScreen() {
   const progress = mode === 'time'
     ? Math.min(1, elapsed / Math.max(targetTotalSecs, 1))
     : Math.min(1, rounds / targetRounds);
-
   const isRunning = state === 'running';
 
-  // ─── OUTRO SCREEN ───
   if (state === 'outro' && finalStats) {
     const stats = getStats();
     return (
       <View style={[styles.container, { backgroundColor: c.bg, paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 }]}>
         <View style={styles.outroWrap}>
           <Text style={styles.outroEmoji}>🌊</Text>
-          <Text style={[styles.outroTitle, { color: c.text }]}>Gut gemacht</Text>
-          <Text style={[styles.outroSub, { color: c.textMuted }]}>
-            Nimm dir einen Moment.{'\n'}Spüre, wie sich dein Atem jetzt anfühlt.
-          </Text>
-
+          <Text style={[styles.outroTitle, { color: c.text }]}>{t.wellDone}</Text>
+          <Text style={[styles.outroSub, { color: c.textMuted }]}>{t.outroSub}</Text>
           <View style={[styles.outroStats, { backgroundColor: c.surface, borderColor: c.border }]}>
             <View style={styles.outroStatItem}>
               <Text style={[styles.outroStatVal, { color: c.text }]}>{formatTime(finalStats.dur)}</Text>
-              <Text style={[styles.outroStatLbl, { color: c.textMuted }]}>Dauer</Text>
+              <Text style={[styles.outroStatLbl, { color: c.textMuted }]}>{t.duration}</Text>
             </View>
             <View style={[styles.outroStatDivider, { backgroundColor: c.border }]} />
             <View style={styles.outroStatItem}>
               <Text style={[styles.outroStatVal, { color: c.text }]}>{finalStats.rounds}</Text>
-              <Text style={[styles.outroStatLbl, { color: c.textMuted }]}>Zyklen</Text>
+              <Text style={[styles.outroStatLbl, { color: c.textMuted }]}>{t.cyclesWord}</Text>
             </View>
             <View style={[styles.outroStatDivider, { backgroundColor: c.border }]} />
             <View style={styles.outroStatItem}>
               <Text style={[styles.outroStatVal, { color: c.text }]}>🔥 {stats.streak}</Text>
-              <Text style={[styles.outroStatLbl, { color: c.textMuted }]}>Tage Streak</Text>
+              <Text style={[styles.outroStatLbl, { color: c.textMuted }]}>{t.dayStreak}</Text>
             </View>
           </View>
-
-          <TouchableOpacity
-            style={[styles.outroBtn, { backgroundColor: c.accentDark }]}
-            onPress={() => router.back()}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.outroBtnTxt}>Fertig</Text>
+          <TouchableOpacity style={[styles.outroBtn, { backgroundColor: c.accentDark }]} onPress={() => router.back()} activeOpacity={0.85}>
+            <Text style={styles.outroBtnTxt}>{t.done}</Text>
           </TouchableOpacity>
         </View>
       </View>
     );
   }
 
-  // ─── INTRO SCREEN ───
   if (state === 'intro') {
     const step = INTRO_STEPS[Math.min(introStep, INTRO_STEPS.length - 1)];
     const isCountdown = step.text.length <= 2;
     return (
       <View style={[styles.container, { backgroundColor: c.bg, paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 }]}>
         <TouchableOpacity onPress={() => router.back()} style={[styles.introSkip, { top: insets.top + 12 }]}>
-          <Text style={{ color: c.textFaint, fontSize: 14 }}>Überspringen ›</Text>
+          <Text style={{ color: c.textFaint, fontSize: 14 }}>{t.skip}</Text>
         </TouchableOpacity>
         <View style={styles.introWrap}>
           <Animated.Text style={[
@@ -252,33 +230,33 @@ export default function SessionScreen() {
           </Animated.Text>
         </View>
         <TouchableOpacity onPress={startRunning} style={styles.introSkipBottom}>
-          <Text style={{ color: c.textMuted, fontSize: 14 }}>Direkt starten</Text>
+          <Text style={{ color: c.textMuted, fontSize: 14 }}>{t.startNow}</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  // ─── MAIN SESSION ───
   return (
     <View style={[styles.container, { backgroundColor: c.bg, paddingTop: insets.top + 8, paddingBottom: insets.bottom + 12 }]}>
       <Modal visible={showStopModal} transparent animationType="fade" onRequestClose={() => setShowStopModal(false)}>
         <View style={mS.overlay}>
           <View style={[mS.sheet, { backgroundColor: c.surface, borderColor: c.border, paddingBottom: insets.bottom + 28 }]}>
             <View style={[mS.handle, { backgroundColor: c.border }]} />
-            <Text style={[mS.title, { color: c.text }]}>Session beenden?</Text>
-            <Text style={[mS.sub, { color: c.textMuted }]}>{formatTime(elapsed)} · {roundsRef.current} {roundsRef.current === 1 ? 'Zyklus' : 'Zyklen'}</Text>
+            <Text style={[mS.title, { color: c.text }]}>{t.endSession}</Text>
+            <Text style={[mS.sub, { color: c.textMuted }]}>
+              {formatTime(elapsed)} · {roundsRef.current} {roundsRef.current === 1 ? t.cycle : t.cyclesWord}
+            </Text>
             <TouchableOpacity style={[mS.doneBtn, { backgroundColor: c.accentDark }]}
               onPress={() => { setShowStopModal(false); finishSession(true); }}>
-              <Text style={mS.doneTxt}>✓  Abgeschlossen</Text>
-              <Text style={[mS.doneSub, { color: c.accent }]}>Zählt für Statistik</Text>
+              <Text style={mS.doneTxt}>{t.completed}</Text>
+              <Text style={[mS.doneSub, { color: c.accent }]}>{t.countsForStats}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[mS.resumeBtn, { backgroundColor: c.elevated, borderColor: c.borderStrong }]}
               onPress={() => { setShowStopModal(false); startRunning(); }}>
-              <Text style={[mS.resumeTxt, { color: c.textSec }]}>▶  Weitermachen</Text>
+              <Text style={[mS.resumeTxt, { color: c.textSec }]}>{t.continueSession}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={mS.cancelBtn}
-              onPress={() => { setShowStopModal(false); finishSession(false); }}>
-              <Text style={[mS.cancelTxt, { color: c.danger }]}>Abbruch (nicht speichern)</Text>
+            <TouchableOpacity style={mS.cancelBtn} onPress={() => { setShowStopModal(false); finishSession(false); }}>
+              <Text style={[mS.cancelTxt, { color: c.danger }]}>{t.discard}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -297,17 +275,12 @@ export default function SessionScreen() {
       </View>
 
       <View style={styles.canvasWrap}>
-        <BreathCanvas
-          technique={technique}
-          isPlaying={isRunning}
-          height={400}
-          onRoundComplete={handleRoundComplete}
-        />
+        <BreathCanvas technique={technique} isPlaying={isRunning} height={400} onRoundComplete={handleRoundComplete} />
       </View>
 
       <View style={styles.phaseWrap}>
         <Text style={[styles.phaseLabel, { color: c.text }]}>
-          {isRunning ? currentPhase : (sessionStartRef.current ? 'Pause' : technique.name)}
+          {isRunning ? currentPhase : (sessionStartRef.current ? t.pauseLabel : technique.name)}
         </Text>
         <Text style={[styles.phaseSecs, { color: c.textMuted }]} numberOfLines={2}>
           {isRunning ? `${secsRemaining}` : technique.description}
@@ -317,11 +290,11 @@ export default function SessionScreen() {
       <View style={styles.controls}>
         {!isRunning ? (
           <TouchableOpacity style={[styles.playBtn, { backgroundColor: c.accentDark }]} onPress={handleStart} activeOpacity={0.85}>
-            <Text style={styles.playTxt}>▶  {sessionStartRef.current ? 'Weiter' : 'Start'}</Text>
+            <Text style={styles.playTxt}>{sessionStartRef.current ? t.resume : t.start}</Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity style={[styles.pauseBtn, { backgroundColor: c.elevated, borderColor: c.borderStrong }]} onPress={handlePause} activeOpacity={0.85}>
-            <Text style={[styles.pauseTxt, { color: c.textSec }]}>⏸  Pause</Text>
+            <Text style={[styles.pauseTxt, { color: c.textSec }]}>{t.pause}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -331,14 +304,11 @@ export default function SessionScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingBottom: 8,
-  },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 8 },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   backTxt: { fontSize: 18 },
   title: { fontSize: 16, fontWeight: '500' },
-  timer: { fontSize: 14, fontVariant: ['tabular-nums'], width: 40, textAlign: 'right' },
+  timer: { fontSize: 14, fontVariant: ['tabular-nums'], width: 44, textAlign: 'right' },
   progressBg: { height: 2, marginHorizontal: 20, borderRadius: 1 },
   progressFill: { height: 2, borderRadius: 1 },
   canvasWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -350,21 +320,16 @@ const styles = StyleSheet.create({
   playTxt: { color: '#fff', fontSize: 18, fontWeight: '500' },
   pauseBtn: { borderRadius: 16, paddingVertical: 17, alignItems: 'center', borderWidth: 1 },
   pauseTxt: { fontSize: 18 },
-  // intro
   introWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
   introText: { fontSize: 24, fontWeight: '300', textAlign: 'center', lineHeight: 34 },
   introCountdown: { fontSize: 90, fontWeight: '200' },
   introSkip: { position: 'absolute', right: 20, zIndex: 10, padding: 8 },
   introSkipBottom: { alignItems: 'center', paddingVertical: 16 },
-  // outro
   outroWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 },
   outroEmoji: { fontSize: 56, marginBottom: 20 },
   outroTitle: { fontSize: 30, fontWeight: '300', letterSpacing: 1, marginBottom: 12 },
   outroSub: { fontSize: 16, lineHeight: 24, textAlign: 'center', marginBottom: 36 },
-  outroStats: {
-    flexDirection: 'row', borderRadius: 16, borderWidth: 0.5,
-    paddingVertical: 20, paddingHorizontal: 12, width: '100%', marginBottom: 36,
-  },
+  outroStats: { flexDirection: 'row', borderRadius: 16, borderWidth: 0.5, paddingVertical: 20, paddingHorizontal: 12, width: '100%', marginBottom: 36 },
   outroStatItem: { flex: 1, alignItems: 'center' },
   outroStatDivider: { width: 0.5 },
   outroStatVal: { fontSize: 22, fontWeight: '400' },

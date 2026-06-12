@@ -6,42 +6,44 @@ export function buildBreathPath(
   phases: Phase[],
   canvasWidth: number,
   canvasHeight: number,
-  paddingH = 40
+  paddingH = 36,
+  paddingV = 30
 ): PathPoint[] {
-  const midY = canvasHeight / 2;
-  const pts: { x: number; y: number; phase?: Phase }[] = [];
-
-  let x = 0;
-  let y = midY;
-  pts.push({ x, y });
-
+  // raw points (unscaled)
+  let x = 0, y = 0;
+  const raw: { x: number; y: number; phase?: Phase }[] = [{ x: 0, y: 0 }];
   for (const phase of phases) {
     const len = phase.seconds * PX_PER_SEC;
-    let nx = x, ny = y;
-    if (phase.direction === 'up') { ny = y - len; }
-    else if (phase.direction === 'down') { ny = y + len; }
-    else if (phase.direction === 'right') { nx = x + len; }
-    pts.push({ x: nx, y: ny, phase });
-    x = nx;
-    y = ny;
+    if (phase.direction === 'up') y -= len;
+    else if (phase.direction === 'down') y += len;
+    else x += len;
+    raw.push({ x, y, phase });
   }
 
-  // scale X to fit canvas
-  const totalW = pts[pts.length - 1].x;
+  const xs = raw.map((p) => p.x);
+  const ys = raw.map((p) => p.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const rawW = maxX - minX;
+  const rawH = maxY - minY || 1;
+
   const availW = canvasWidth - paddingH * 2;
-  const scaleX = availW / (totalW || 1);
+  const availH = canvasHeight - paddingV * 2;
 
-  // scale Y so path fits vertically with margin
-  const ys = pts.map((p) => p.y);
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
-  const pathH = maxY - minY || 1;
-  const availH = canvasHeight - 80;
-  const scaleY = Math.min(1, availH / pathH);
+  // scale to fill available space (upscaling allowed → vertical-only curves get big)
+  const scaleX = rawW > 0 ? availW / rawW : 1;
+  const scaleY = availH / rawH;
 
-  return pts.map((p) => ({
-    x: paddingH + (p.x) * scaleX,
-    y: midY + (p.y - midY) * scaleY,
+  const w = rawW * scaleX;
+  const h = rawH * scaleY;
+
+  // center both axes
+  const offsetX = (canvasWidth - w) / 2;
+  const offsetY = (canvasHeight - h) / 2;
+
+  return raw.map((p) => ({
+    x: offsetX + (p.x - minX) * scaleX,
+    y: offsetY + (p.y - minY) * scaleY,
     phase: p.phase,
   }));
 }
@@ -68,14 +70,11 @@ export function getPosAtTime(
       return {
         x: from.x + (to.x - from.x) * frac,
         y: from.y + (to.y - from.y) * frac,
-        phase,
-        fracInPhase: frac,
-        phaseIndex: i,
+        phase, fracInPhase: frac, phaseIndex: i,
       };
     }
     elapsed += phase.seconds;
   }
-
   const last = pts[pts.length - 1];
   return { x: last.x, y: last.y, phase: phases[phases.length - 1], fracInPhase: 1, phaseIndex: phases.length - 1 };
 }

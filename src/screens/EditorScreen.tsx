@@ -1,121 +1,52 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  SafeAreaView,
-  Alert,
+  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useBreathStore } from '../store/breathStore';
 import { Phase, PhaseDirection } from '../types';
-
-const DIRECTIONS: { label: string; value: PhaseDirection; color: string }[] = [
-  { label: 'Einatmen ↑', value: 'up', color: '#378ADD' },
-  { label: 'Halten →', value: 'right', color: '#EF9F27' },
-  { label: 'Ausatmen ↓', value: 'down', color: '#1D9E75' },
-];
-
-function PhaseRow({
-  phase,
-  index,
-  onChange,
-  onDelete,
-}: {
-  phase: Phase;
-  index: number;
-  onChange: (i: number, p: Phase) => void;
-  onDelete: (i: number) => void;
-}) {
-  const dir = DIRECTIONS.find((d) => d.value === phase.direction)!;
-
-  return (
-    <View style={styles.phaseRow}>
-      <View style={styles.phaseIndex}>
-        <Text style={styles.phaseIndexTxt}>{index + 1}</Text>
-      </View>
-
-      <View style={styles.dirBtns}>
-        {DIRECTIONS.map((d) => (
-          <TouchableOpacity
-            key={d.value}
-            style={[styles.dirBtn, phase.direction === d.value && { borderColor: d.color + '80', backgroundColor: d.color + '15' }]}
-            onPress={() => onChange(index, { ...phase, direction: d.value, label: d.label.split(' ')[0] })}
-          >
-            <Text style={[styles.dirBtnTxt, phase.direction === d.value && { color: d.color }]}>
-              {d.label.split(' ')[1]}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <View style={styles.secsWrap}>
-        <TouchableOpacity
-          style={styles.secsBtn}
-          onPress={() => onChange(index, { ...phase, seconds: Math.max(1, phase.seconds - 1) })}
-        >
-          <Text style={styles.secsBtnTxt}>−</Text>
-        </TouchableOpacity>
-        <Text style={styles.secsVal}>{phase.seconds}s</Text>
-        <TouchableOpacity
-          style={styles.secsBtn}
-          onPress={() => onChange(index, { ...phase, seconds: Math.min(60, phase.seconds + 1) })}
-        >
-          <Text style={styles.secsBtnTxt}>+</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Text style={[styles.phaseDirLbl, { color: dir.color }]}>{phase.label}</Text>
-
-      <TouchableOpacity onPress={() => onDelete(index)} style={styles.deleteBtn}>
-        <Text style={styles.deleteTxt}>✕</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
+import { useTheme } from '../theme';
+import { useT } from '../i18n';
 
 export default function EditorScreen() {
   const router = useRouter();
+  const c = useTheme();
+  const t = useT();
+  const insets = useSafeAreaInsets();
   const { addCustomTechnique } = useBreathStore();
+
+  const DIRECTIONS: { label: string; arrow: string; value: PhaseDirection; color: string }[] = [
+    { label: t.inhale, arrow: '↑', value: 'up', color: c.up },
+    { label: t.hold, arrow: '→', value: 'right', color: c.hold },
+    { label: t.exhale, arrow: '↓', value: 'down', color: c.down },
+  ];
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [phases, setPhases] = useState<Phase[]>([
-    { label: 'Einatmen', seconds: 4, direction: 'up' },
-    { label: 'Halten', seconds: 4, direction: 'right' },
-    { label: 'Ausatmen', seconds: 4, direction: 'down' },
+    { label: t.inhale, seconds: 4, direction: 'up' },
+    { label: t.hold, seconds: 4, direction: 'right' },
+    { label: t.exhale, seconds: 4, direction: 'down' },
   ]);
 
-  const handleChange = (i: number, p: Phase) => {
+  const handleChange = (i: number, p: Phase) =>
     setPhases((prev) => prev.map((x, idx) => (idx === i ? p : x)));
-  };
-
   const handleDelete = (i: number) => {
     if (phases.length <= 1) return;
     setPhases((prev) => prev.filter((_, idx) => idx !== i));
   };
-
-  const handleAdd = () => {
-    setPhases((prev) => [...prev, { label: 'Einatmen', seconds: 4, direction: 'up' }]);
-  };
+  const handleAdd = () =>
+    setPhases((prev) => [...prev, { label: t.inhale, seconds: 4, direction: 'up' }]);
 
   const handleSave = () => {
-    if (!name.trim()) {
-      Alert.alert('Name fehlt', 'Gib der Technik einen Namen.');
-      return;
-    }
-    if (phases.length < 1) {
-      Alert.alert('Keine Phasen', 'Füge mindestens eine Phase hinzu.');
-      return;
-    }
+    if (!name.trim()) { Alert.alert(t.nameMissing, t.nameMissingMsg); return; }
     addCustomTechnique({
       id: `custom_${Date.now()}`,
       name: name.trim(),
-      description: description.trim() || 'Eigene Technik',
+      description: description.trim() || t.customTechnique,
       phases,
+      effects: [],
       isCustom: true,
     });
     router.back();
@@ -124,156 +55,94 @@ export default function EditorScreen() {
   const totalSecs = phases.reduce((a, p) => a + p.seconds, 0);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backTxt}>← Zurück</Text>
+    <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top + 8 }}>
+      <View style={[s.header, { borderBottomColor: c.border }]}>
+        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+          <Text style={{ color: c.textMuted, fontSize: 14 }}>{t.back}</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Neue Technik</Text>
-        <TouchableOpacity onPress={handleSave} style={styles.saveBtn}>
-          <Text style={styles.saveTxt}>Speichern</Text>
+        <Text style={[s.headerTitle, { color: c.textSec }]}>{t.newTechniqueTitle}</Text>
+        <TouchableOpacity onPress={handleSave}
+          style={[s.saveBtn, { backgroundColor: c.accentBg, borderColor: c.accentBorder }]}>
+          <Text style={{ color: c.accent, fontSize: 14, fontWeight: '500' }}>{t.save}</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 40 }]} showsVerticalScrollIndicator={false}>
         <TextInput
-          style={styles.nameInput}
-          placeholder="Name der Technik"
-          placeholderTextColor="#333"
-          value={name}
-          onChangeText={setName}
+          style={[s.nameInput, { backgroundColor: c.surface, borderColor: c.border, color: c.text }]}
+          placeholder={t.techniqueName} placeholderTextColor={c.textFaint}
+          value={name} onChangeText={setName}
         />
         <TextInput
-          style={styles.descInput}
-          placeholder="Kurze Beschreibung (optional)"
-          placeholderTextColor="#333"
-          value={description}
-          onChangeText={setDescription}
-          multiline
+          style={[s.descInput, { backgroundColor: c.surface, borderColor: c.border, color: c.textSec }]}
+          placeholder={t.techniqueDesc} placeholderTextColor={c.textFaint}
+          value={description} onChangeText={setDescription} multiline
         />
 
-        <Text style={styles.sectionLabel}>Phasen · {totalSecs}s / Runde</Text>
+        <Text style={[s.sectionLabel, { color: c.textFaint }]}>{t.phases} · {totalSecs}{t.perRoundLabel}</Text>
 
-        {phases.map((p, i) => (
-          <PhaseRow key={i} phase={p} index={i} onChange={handleChange} onDelete={handleDelete} />
-        ))}
+        {phases.map((p, i) => {
+          const dir = DIRECTIONS.find((d) => d.value === p.direction)!;
+          return (
+            <View key={i} style={[s.phaseRow, { backgroundColor: c.surface, borderColor: c.border }]}>
+              <Text style={[s.phaseIdx, { color: c.textFaint }]}>{i + 1}</Text>
+              <View style={s.dirBtns}>
+                {DIRECTIONS.map((d) => (
+                  <TouchableOpacity key={d.value}
+                    style={[s.dirBtn, { borderColor: c.border },
+                      p.direction === d.value && { borderColor: d.color + '80', backgroundColor: d.color + '15' }]}
+                    onPress={() => handleChange(i, { ...p, direction: d.value, label: d.label })}>
+                    <Text style={[s.dirBtnTxt, { color: p.direction === d.value ? d.color : c.textFaint }]}>{d.arrow}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={s.secsWrap}>
+                <TouchableOpacity style={s.secsBtn} onPress={() => handleChange(i, { ...p, seconds: Math.max(1, p.seconds - 1) })}>
+                  <Text style={[s.secsBtnTxt, { color: c.textMuted }]}>−</Text>
+                </TouchableOpacity>
+                <Text style={[s.secsVal, { color: c.text }]}>{p.seconds}s</Text>
+                <TouchableOpacity style={s.secsBtn} onPress={() => handleChange(i, { ...p, seconds: Math.min(90, p.seconds + 1) })}>
+                  <Text style={[s.secsBtnTxt, { color: c.textMuted }]}>+</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={[s.phaseLbl, { color: dir.color }]} numberOfLines={1}>{p.label}</Text>
+              <TouchableOpacity onPress={() => handleDelete(i)} style={s.delBtn}>
+                <Text style={{ color: c.textFaint, fontSize: 14 }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })}
 
-        <TouchableOpacity style={styles.addPhaseBtn} onPress={handleAdd}>
-          <Text style={styles.addPhaseTxt}>+ Phase hinzufügen</Text>
+        <TouchableOpacity style={[s.addBtn, { borderColor: c.border }]} onPress={handleAdd}>
+          <Text style={{ color: c.textMuted, fontSize: 15 }}>{t.addPhase}</Text>
         </TouchableOpacity>
-
-        <View style={styles.preview}>
-          <Text style={styles.previewLabel}>Vorschau</Text>
-          <View style={styles.previewPills}>
-            {phases.map((p, i) => {
-              const dir = DIRECTIONS.find((d) => d.value === p.direction)!;
-              return (
-                <View key={i} style={[styles.previewPill, { backgroundColor: dir.color + '18', borderColor: dir.color + '40' }]}>
-                  <Text style={[styles.previewPillTxt, { color: dir.color }]}>
-                    {p.label} {p.seconds}s
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0f' },
+const s = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#1a1a2e',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 0.5,
   },
   backBtn: { padding: 4 },
-  backTxt: { color: '#446', fontSize: 14 },
-  headerTitle: { color: '#ddd', fontSize: 16, fontWeight: '500' },
-  saveBtn: {
-    backgroundColor: '#185FA520',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderWidth: 0.5,
-    borderColor: '#185FA550',
-  },
-  saveTxt: { color: '#378ADD', fontSize: 14, fontWeight: '500' },
-  scroll: { padding: 24, paddingBottom: 60 },
-  nameInput: {
-    backgroundColor: '#0f0f1a',
-    borderRadius: 12,
-    padding: 16,
-    color: '#fff',
-    fontSize: 20,
-    borderWidth: 0.5,
-    borderColor: '#1a1a2e',
-    marginBottom: 12,
-  },
-  descInput: {
-    backgroundColor: '#0f0f1a',
-    borderRadius: 12,
-    padding: 16,
-    color: '#aaa',
-    fontSize: 15,
-    borderWidth: 0.5,
-    borderColor: '#1a1a2e',
-    marginBottom: 24,
-    minHeight: 60,
-  },
-  sectionLabel: { color: '#446', fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 },
-  phaseRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#0f0f1a',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 0.5,
-    borderColor: '#1a1a2e',
-  },
-  phaseIndex: { width: 24, alignItems: 'center' },
-  phaseIndexTxt: { color: '#333', fontSize: 13 },
+  headerTitle: { fontSize: 16, fontWeight: '500' },
+  saveBtn: { borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6, borderWidth: 0.5 },
+  scroll: { padding: 20 },
+  nameInput: { borderRadius: 12, padding: 16, fontSize: 20, borderWidth: 0.5, marginBottom: 12 },
+  descInput: { borderRadius: 12, padding: 16, fontSize: 15, borderWidth: 0.5, marginBottom: 24, minHeight: 60 },
+  sectionLabel: { fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 },
+  phaseRow: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 0.5 },
+  phaseIdx: { width: 20, textAlign: 'center', fontSize: 13 },
   dirBtns: { flexDirection: 'row', gap: 4 },
-  dirBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 0.5,
-    borderColor: '#1a1a2e',
-  },
-  dirBtnTxt: { fontSize: 16, color: '#334' },
-  secsWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dirBtn: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', borderWidth: 0.5 },
+  dirBtnTxt: { fontSize: 16 },
+  secsWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   secsBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  secsBtnTxt: { color: '#446', fontSize: 20, lineHeight: 24 },
-  secsVal: { color: '#ddd', fontSize: 15, fontWeight: '500', minWidth: 32, textAlign: 'center', fontVariant: ['tabular-nums'] },
-  phaseDirLbl: { flex: 1, fontSize: 13 },
-  deleteBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  deleteTxt: { color: '#333', fontSize: 14 },
-  addPhaseBtn: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderWidth: 0.5,
-    borderColor: '#1a1a2e',
-    borderStyle: 'dashed',
-    marginTop: 4,
-    marginBottom: 32,
-  },
-  addPhaseTxt: { color: '#446', fontSize: 15 },
-  preview: { backgroundColor: '#0f0f1a', borderRadius: 12, padding: 16, borderWidth: 0.5, borderColor: '#1a1a2e' },
-  previewLabel: { color: '#334', fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 },
-  previewPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  previewPill: { borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 0.5 },
-  previewPillTxt: { fontSize: 12, fontWeight: '500' },
+  secsBtnTxt: { fontSize: 20, lineHeight: 24 },
+  secsVal: { fontSize: 15, fontWeight: '500', minWidth: 34, textAlign: 'center', fontVariant: ['tabular-nums'] },
+  phaseLbl: { flex: 1, fontSize: 13 },
+  delBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  addBtn: { borderRadius: 12, paddingVertical: 14, alignItems: 'center', borderWidth: 0.5, borderStyle: 'dashed', marginTop: 4 },
 });

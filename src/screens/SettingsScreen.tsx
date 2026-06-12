@@ -6,7 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettingsStore, SoundType } from '../store/settingsStore';
 import { useTheme, Colors } from '../theme';
-import { SOUND_LABELS } from '../utils/soundManager';
+import { useT } from '../i18n';
 
 const SOUND_OPTIONS: SoundType[] = ['none', 'gong', 'bell', 'bowl'];
 const KOFI_URL = 'https://ko-fi.com/brotimcbrot';
@@ -28,66 +28,85 @@ const rS = StyleSheet.create({
 
 export default function SettingsScreen() {
   const c = useTheme();
+  const t = useT();
   const insets = useSafeAreaInsets();
   const {
-    theme, setTheme, soundType, setSoundType,
+    theme, setTheme, language, setLanguage, soundType, setSoundType,
     spotifyUri, setSpotifyUri, spotifyEnabled, setSpotifyEnabled,
-    introOutroEnabled, setIntroOutroEnabled,
-    hapticsEnabled, setHapticsEnabled,
+    introOutroEnabled, setIntroOutroEnabled, hapticsEnabled, setHapticsEnabled,
   } = useSettingsStore();
   const [spotifyInput, setSpotifyInput] = useState(spotifyUri);
   const s = makeStyles(c);
 
+  const soundLabels: Record<SoundType, string> = {
+    none: t.soundNone, gong: t.soundGong, bell: t.soundBell, bowl: t.soundBowl,
+  };
+
   const openSpotify = () => {
     Linking.openURL(spotifyUri || 'spotify:').catch(() =>
-      Alert.alert('Spotify nicht gefunden', 'Installiere die Spotify App und versuche es erneut.')
+      Alert.alert(t.spotifyNotFound, t.spotifyInstall)
     );
   };
 
   return (
     <View style={[s.container, { paddingTop: insets.top + 8 }]}>
       <View style={s.header}>
-        <Text style={s.title}>Einstellungen</Text>
+        <Text style={s.title}>{t.settings}</Text>
       </View>
 
       <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: 32 }]} showsVerticalScrollIndicator={false}>
 
-        {/* SESSION */}
-        <Text style={s.section}>Session</Text>
+        {/* LANGUAGE */}
+        <Text style={s.section}>{t.language}</Text>
         <View style={s.card}>
-          <Row label="Intro & Outro (Einstimmung vor/nach der Übung)" c={c}>
-            <Switch value={introOutroEnabled} onValueChange={setIntroOutroEnabled}
-              trackColor={{ false: c.border, true: c.accent }} thumbColor={c.surface} />
-          </Row>
-          <Row label="Vibration bei Phasenwechsel" c={c} last>
-            <Switch value={hapticsEnabled} onValueChange={setHapticsEnabled}
-              trackColor={{ false: c.border, true: c.accent }} thumbColor={c.surface} />
-          </Row>
-        </View>
-
-        {/* DARSTELLUNG */}
-        <Text style={s.section}>Darstellung</Text>
-        <View style={s.card}>
-          <Row label="Design" c={c} last>
+          <Row label={t.language} c={c} last>
             <View style={s.toggleRow}>
-              <TouchableOpacity style={[s.toggleBtn, theme === 'dark' && s.toggleBtnActive]} onPress={() => setTheme('dark')}>
-                <Text style={[s.toggleTxt, theme === 'dark' && s.toggleTxtActive]}>🌙 Dunkel</Text>
+              <TouchableOpacity style={[s.toggleBtn, language === 'de' && s.toggleBtnActive]} onPress={() => setLanguage('de')}>
+                <Text style={[s.toggleTxt, language === 'de' && s.toggleTxtActive]}>🇩🇪 Deutsch</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[s.toggleBtn, theme === 'light' && s.toggleBtnActive]} onPress={() => setTheme('light')}>
-                <Text style={[s.toggleTxt, theme === 'light' && s.toggleTxtActive]}>☀️ Hell</Text>
+              <TouchableOpacity style={[s.toggleBtn, language === 'en' && s.toggleBtnActive]} onPress={() => setLanguage('en')}>
+                <Text style={[s.toggleTxt, language === 'en' && s.toggleTxtActive]}>🇬🇧 English</Text>
               </TouchableOpacity>
             </View>
           </Row>
         </View>
 
-        {/* KLANG */}
-        <Text style={s.section}>Klang</Text>
+        {/* SESSION */}
+        <Text style={s.section}>{t.session}</Text>
+        <View style={s.card}>
+          <Row label={t.introOutro} c={c}>
+            <Switch value={introOutroEnabled} onValueChange={setIntroOutroEnabled}
+              trackColor={{ false: c.border, true: c.accent }} thumbColor={c.surface} />
+          </Row>
+          <Row label={t.haptics} c={c} last>
+            <Switch value={hapticsEnabled} onValueChange={setHapticsEnabled}
+              trackColor={{ false: c.border, true: c.accent }} thumbColor={c.surface} />
+          </Row>
+        </View>
+
+        {/* APPEARANCE */}
+        <Text style={s.section}>{t.appearance}</Text>
+        <View style={s.card}>
+          <Row label={t.design} c={c} last>
+            <View style={s.toggleRow}>
+              <TouchableOpacity style={[s.toggleBtn, theme === 'dark' && s.toggleBtnActive]} onPress={() => setTheme('dark')}>
+                <Text style={[s.toggleTxt, theme === 'dark' && s.toggleTxtActive]}>{t.dark}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.toggleBtn, theme === 'light' && s.toggleBtnActive]} onPress={() => setTheme('light')}>
+                <Text style={[s.toggleTxt, theme === 'light' && s.toggleTxtActive]}>{t.light}</Text>
+              </TouchableOpacity>
+            </View>
+          </Row>
+        </View>
+
+        {/* SOUND */}
+        <Text style={s.section}>{t.sound}</Text>
         <View style={s.card}>
           {SOUND_OPTIONS.map((opt, i) => (
             <TouchableOpacity key={opt}
               style={[s.soundRow, i < SOUND_OPTIONS.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: c.border }]}
               onPress={() => setSoundType(opt)}>
-              <Text style={[s.soundLabel, { color: c.text }]}>{SOUND_LABELS[opt]}</Text>
+              <Text style={[s.soundLabel, { color: c.text }]}>{soundLabels[opt]}</Text>
               <View style={[s.radio, soundType === opt && { borderColor: c.accent }]}>
                 {soundType === opt && <View style={[s.radioDot, { backgroundColor: c.accent }]} />}
               </View>
@@ -95,10 +114,10 @@ export default function SettingsScreen() {
           ))}
         </View>
 
-        {/* MUSIK */}
-        <Text style={s.section}>Musik</Text>
+        {/* MUSIC */}
+        <Text style={s.section}>{t.music}</Text>
         <View style={s.card}>
-          <Row label="Spotify beim Start öffnen" c={c}>
+          <Row label={t.spotifyOnStart} c={c}>
             <Switch value={spotifyEnabled} onValueChange={setSpotifyEnabled}
               trackColor={{ false: c.border, true: c.accent }} thumbColor={c.surface} />
           </Row>
@@ -111,43 +130,41 @@ export default function SettingsScreen() {
               placeholder="spotify:playlist:..." placeholderTextColor={c.textFaint}
               autoCapitalize="none" autoCorrect={false}
             />
-            <Text style={[s.spotifyHint, { color: c.textFaint }]}>In Spotify: ··· → Teilen → URI kopieren</Text>
+            <Text style={[s.spotifyHint, { color: c.textFaint }]}>{t.spotifyHint}</Text>
           </View>
           <TouchableOpacity style={[s.spotifyBtn, { backgroundColor: '#1DB954' }]} onPress={openSpotify}>
-            <Text style={s.spotifyBtnTxt}>▶  Spotify öffnen</Text>
+            <Text style={s.spotifyBtnTxt}>{t.openSpotify}</Text>
           </TouchableOpacity>
         </View>
 
-        {/* UNTERSTÜTZEN */}
-        <Text style={s.section}>Projekt unterstützen</Text>
+        {/* SUPPORT */}
+        <Text style={s.section}>{t.support}</Text>
         <View style={s.supportCard}>
-          <Text style={[s.supportTitle, { color: c.text }]}>BreathFlow ist kostenlos & open source</Text>
-          <Text style={[s.supportDesc, { color: c.textMuted }]}>
-            Wenn dir die App gefällt, freue ich mich über einen Kaffee ☕
-          </Text>
+          <Text style={[s.supportTitle, { color: c.text }]}>{t.supportTitle}</Text>
+          <Text style={[s.supportDesc, { color: c.textMuted }]}>{t.supportDesc}</Text>
           <TouchableOpacity style={s.kofiBtn} onPress={() => Linking.openURL(KOFI_URL)} activeOpacity={0.85}>
-            <Text style={s.kofiBtnTxt}>☕  Ko-fi — Kaffee spendieren</Text>
+            <Text style={s.kofiBtnTxt}>{t.kofiBtn}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[s.githubBtn, { backgroundColor: c.elevated, borderColor: c.border }]}
             onPress={() => Linking.openURL(GITHUB_URL)} activeOpacity={0.85}>
-            <Text style={[s.githubBtnTxt, { color: c.textSec }]}>⭐  GitHub — Stern dalassen</Text>
+            <Text style={[s.githubBtnTxt, { color: c.textSec }]}>{t.githubBtn}</Text>
           </TouchableOpacity>
         </View>
 
         {/* APP */}
-        <Text style={s.section}>App</Text>
+        <Text style={s.section}>{t.app}</Text>
         <View style={s.card}>
-          <Row label="Version" c={c}>
-            <Text style={[rS.label, { color: c.textFaint }]}>1.1.0</Text>
+          <Row label={t.version} c={c}>
+            <Text style={[rS.label, { color: c.textFaint }]}>1.2.0</Text>
           </Row>
-          <Row label="Open Source (MIT)" c={c}>
+          <Row label={t.openSource} c={c}>
             <TouchableOpacity onPress={() => Linking.openURL(GITHUB_URL)}>
               <Text style={[rS.label, { color: c.accent }]}>GitHub ↗</Text>
             </TouchableOpacity>
           </Row>
-          <Row label="Mitmachen / Übersetzen" c={c} last>
+          <Row label={t.contribute} c={c} last>
             <TouchableOpacity onPress={() => Linking.openURL(`${GITHUB_URL}/blob/main/CONTRIBUTING.md`)}>
-              <Text style={[rS.label, { color: c.accent }]}>Mehr ↗</Text>
+              <Text style={[rS.label, { color: c.accent }]}>{t.more}</Text>
             </TouchableOpacity>
           </Row>
         </View>
@@ -165,7 +182,7 @@ function makeStyles(c: Colors) {
     section: { color: c.textFaint, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', marginTop: 24, marginBottom: 8 },
     card: { backgroundColor: c.surface, borderRadius: 16, paddingHorizontal: 16, borderWidth: 0.5, borderColor: c.border },
     toggleRow: { flexDirection: 'row', gap: 8 },
-    toggleBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 0.5, borderColor: c.border, backgroundColor: c.elevated },
+    toggleBtn: { paddingHorizontal: 13, paddingVertical: 8, borderRadius: 10, borderWidth: 0.5, borderColor: c.border, backgroundColor: c.elevated },
     toggleBtnActive: { backgroundColor: c.accentBg, borderColor: c.accentBorder },
     toggleTxt: { color: c.textMuted, fontSize: 14 },
     toggleTxtActive: { color: c.accent, fontWeight: '500' },
