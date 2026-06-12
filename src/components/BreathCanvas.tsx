@@ -1,22 +1,26 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { View } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 import Svg, { Path, Circle, Line } from 'react-native-svg';
 import { BreathTechnique } from '../types';
 import { buildBreathPath, getTotalSeconds, getPosAtTime } from '../utils/pathGeometry';
+import { useTheme } from '../theme';
 
 interface Props {
   technique: BreathTechnique;
   isPlaying: boolean;
+  height?: number;
   onRoundComplete?: (round: number) => void;
 }
 
-export function BreathCanvas({ technique, isPlaying, onRoundComplete }: Props) {
-  const canvasWidth = 320;
-  const canvasHeight = 280;
+export function BreathCanvas({ technique, isPlaying, height = 380, onRoundComplete }: Props) {
+  const c = useTheme();
+  const { width } = useWindowDimensions();
+  const canvasWidth = width - 32;
+  const canvasHeight = height;
 
   const pts = useMemo(
     () => buildBreathPath(technique.phases, canvasWidth, canvasHeight),
-    [technique]
+    [technique, canvasWidth, canvasHeight]
   );
 
   const totalSecs = getTotalSeconds(technique.phases);
@@ -43,6 +47,7 @@ export function BreathCanvas({ technique, isPlaying, onRoundComplete }: Props) {
       if (animRef.current) cancelAnimationFrame(animRef.current);
     }
     return () => { if (animRef.current) cancelAnimationFrame(animRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying]);
 
   const trailPathD = useMemo(() => {
@@ -67,7 +72,7 @@ export function BreathCanvas({ technique, isPlaying, onRoundComplete }: Props) {
       elapsed += phase.seconds;
     }
     return d;
-  }, [t, pts]);
+  }, [t, pts, technique.phases]);
 
   const pos = getPosAtTime(pts, technique.phases, t);
   const midY = canvasHeight / 2;
@@ -75,15 +80,17 @@ export function BreathCanvas({ technique, isPlaying, onRoundComplete }: Props) {
   return (
     <View style={{ width: canvasWidth, height: canvasHeight }}>
       <Svg width={canvasWidth} height={canvasHeight}>
-        <Line x1={24} y1={midY} x2={canvasWidth - 24} y2={midY}
-          stroke="#1e2e3e" strokeWidth={0.5} strokeDasharray="6,6" />
-        <Path d={trailPathD} stroke="#1a2a3a" strokeWidth={2} fill="none"
+        <Line
+          x1={16} y1={midY} x2={canvasWidth - 16} y2={midY}
+          stroke={c.midLine} strokeWidth={0.5} strokeDasharray="6,6"
+        />
+        <Path d={trailPathD} stroke={c.trailGhost} strokeWidth={2.5} fill="none"
           strokeLinejoin="round" strokeLinecap="round" />
-        <Path d={activePathD} stroke="#378ADD" strokeWidth={3} fill="none"
+        <Path d={activePathD} stroke={c.accent} strokeWidth={3.5} fill="none"
           strokeLinejoin="round" strokeLinecap="round" />
-        <Circle cx={pos.x} cy={pos.y} r={12} fill="#85B7EB" opacity={0.2} />
-        <Circle cx={pos.x} cy={pos.y} r={7} fill="#85B7EB" />
-        <Circle cx={pos.x} cy={pos.y} r={4} fill="#185FA5" />
+        <Circle cx={pos.x} cy={pos.y} r={16} fill={c.accent} opacity={0.15} />
+        <Circle cx={pos.x} cy={pos.y} r={9} fill={c.accent} opacity={0.85} />
+        <Circle cx={pos.x} cy={pos.y} r={5} fill={c.accentDark} />
       </Svg>
     </View>
   );

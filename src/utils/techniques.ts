@@ -2,12 +2,13 @@ import { BreathTechnique } from '../types';
 
 export const BUILTIN_TECHNIQUES: BreathTechnique[] = [
 
-  // ─── BEGINNER ──────────────────────────────────────────────────────────────
+  // ─── BEGINNER ──────────────────────────────────────────────
 
   {
     id: 'box',
     name: 'Box Breathing',
-    description: 'Gleichmäßiger 4er-Rhythmus. Stress reduzieren, Fokus fördern. Von Navy SEALs genutzt.',
+    description: 'Der Klassiker für Fokus und innere Ruhe. Von Navy SEALs in Stresssituationen genutzt.',
+    effects: ['balancing', 'calming'],
     phases: [
       { label: 'Einatmen', seconds: 4, direction: 'up' },
       { label: 'Halten', seconds: 4, direction: 'right' },
@@ -15,94 +16,94 @@ export const BUILTIN_TECHNIQUES: BreathTechnique[] = [
       { label: 'Halten', seconds: 4, direction: 'right' },
     ],
   },
-
   {
     id: 'diaphragmatic',
     name: 'Zwerchfellatmung',
-    description: 'Tiefes Bauchatmen. Basis aller Atemübungen. Aktiviert das Zwerchfell, beruhigt sofort.',
+    description: 'Die Basis aller Atemarbeit. Tiefes Bauchatmen beruhigt sofort und verbessert die Sauerstoffaufnahme.',
+    effects: ['calming', 'lung_training'],
     phases: [
       { label: 'Einatmen (Bauch)', seconds: 4, direction: 'up' },
       { label: 'Ausatmen (Bauch)', seconds: 6, direction: 'down' },
     ],
   },
-
   {
     id: 'equal',
     name: 'Gleichmäßiges Atmen',
-    description: 'Gleich langes Ein- und Ausatmen (Sama Vritti). Nervensystem ausgleichen.',
+    description: 'Sama Vritti aus dem Yoga. Bringt Körper und Geist ins Gleichgewicht.',
+    effects: ['balancing'],
     phases: [
       { label: 'Einatmen', seconds: 4, direction: 'up' },
       { label: 'Ausatmen', seconds: 4, direction: 'down' },
     ],
   },
-
   {
     id: 'triangle',
     name: 'Dreiecks-Atmung',
-    description: 'Drei Phasen ohne Schluss-Pause. Sanfte Entspannung für Einsteiger.',
+    description: 'Sanfter Einstieg in Atemhalte-Techniken. Beruhigt ohne zu überfordern.',
+    effects: ['calming'],
     phases: [
       { label: 'Einatmen', seconds: 4, direction: 'up' },
       { label: 'Halten', seconds: 4, direction: 'right' },
       { label: 'Ausatmen', seconds: 4, direction: 'down' },
     ],
   },
-
   {
     id: 'pursed_lip',
     name: 'Lippenbremsatmung',
-    description: '2:4-Verhältnis mit gespitzten Lippen. Verbessert Lungenkapazität, lindert Kurzatmigkeit.',
+    description: 'Stärkt die Atemwege und lindert Kurzatmigkeit. Aus der Lungen-Rehabilitation.',
+    effects: ['lung_training'],
     phases: [
       { label: 'Einatmen', seconds: 2, direction: 'up' },
       { label: 'Ausatmen (langsam)', seconds: 4, direction: 'down' },
     ],
   },
-
   {
     id: 'physiological_sigh',
     name: 'Physiologischer Seufzer',
-    description: 'Doppel-Einatmung + langer Ausatem. Wissenschaftlich schnellster Stress-Reset (Stanford 2023).',
+    description: 'Der wissenschaftlich schnellste Stress-Reset. Wirkt in unter einer Minute (Stanford 2023).',
+    effects: ['calming'],
     phases: [
       { label: 'Einatmen', seconds: 4, direction: 'up' },
-      { label: '2. Einatmen (schnüffeln)', seconds: 2, direction: 'up' },
+      { label: 'Nachatmen', seconds: 2, direction: 'up' },
       { label: 'Lang ausatmen', seconds: 8, direction: 'down' },
     ],
   },
-
   {
     id: 'relax',
     name: 'Entspannung 1:2',
-    description: 'Verlängertes Ausatmen aktiviert sofort den Ruhemodus des Nervensystems.',
+    description: 'Doppelt so lang ausatmen wie einatmen — der direkte Weg in den Ruhemodus.',
+    effects: ['calming'],
     phases: [
       { label: 'Einatmen', seconds: 4, direction: 'up' },
       { label: 'Ausatmen', seconds: 8, direction: 'down' },
     ],
   },
-
   {
     id: '478',
     name: '4-7-8 Atmung',
-    description: 'Nach Dr. Andrew Weil. Aktiviert den Parasympathikus. Ideal zum Einschlafen.',
+    description: 'Die Einschlaf-Technik nach Dr. Andrew Weil. Beruhigt das Nervensystem zuverlässig.',
+    effects: ['calming'],
     phases: [
       { label: 'Einatmen', seconds: 4, direction: 'up' },
       { label: 'Halten', seconds: 7, direction: 'right' },
       { label: 'Ausatmen', seconds: 8, direction: 'down' },
     ],
   },
-
   {
     id: 'koherent',
     name: 'Kohärentes Atmen',
-    description: '5 Atemzüge/Minute. Nach James Nestor: optimiert Herzratenvariabilität nachhaltig.',
+    description: 'Optimiert die Herzratenvariabilität. Ideale tägliche Basis-Praxis nach James Nestor.',
+    effects: ['balancing', 'calming'],
     phases: [
       { label: 'Einatmen', seconds: 5, direction: 'up' },
       { label: 'Ausatmen', seconds: 5, direction: 'down' },
     ],
   },
-
   {
     id: 'soma_basic',
     name: 'SOMA Basis',
-    description: 'Sanfte Pranayama-Variante (Niraj Naik). Korrigiert Atemgewohnheiten, stärkt Resilienz.',
+    description: 'Sanfte Pranayama-Variante. Korrigiert Atemgewohnheiten und baut Resilienz auf.',
+    effects: ['balancing'],
     phases: [
       { label: 'Einatmen', seconds: 2, direction: 'up' },
       { label: 'Halten', seconds: 1, direction: 'right' },
@@ -110,21 +111,21 @@ export const BUILTIN_TECHNIQUES: BreathTechnique[] = [
       { label: 'Halten', seconds: 1, direction: 'right' },
     ],
   },
-
   {
     id: 'energize',
     name: 'Energie-Boost',
-    description: 'Schnelles Atmen aktiviert das Nervensystem. Wach und konzentriert werden.',
+    description: 'Schneller Rhythmus für Wachheit und Konzentration. Der Espresso unter den Atemübungen.',
+    effects: ['energizing'],
     phases: [
       { label: 'Einatmen', seconds: 2, direction: 'up' },
       { label: 'Ausatmen', seconds: 2, direction: 'down' },
     ],
   },
-
   {
     id: 'buteyko',
     name: 'Buteyko Basis',
-    description: 'Reduziertes Atmen nach Dr. Konstantin Buteyko. Erhöht CO₂-Toleranz, hilft bei Asthma.',
+    description: 'Reduziertes Atmen erhöht die CO₂-Toleranz. Bewährt bei Asthma und Schlafproblemen.',
+    effects: ['lung_training', 'calming'],
     phases: [
       { label: 'Einatmen', seconds: 3, direction: 'up' },
       { label: 'Halten', seconds: 3, direction: 'right' },
@@ -133,12 +134,13 @@ export const BUILTIN_TECHNIQUES: BreathTechnique[] = [
     ],
   },
 
-  // ─── FORTGESCHRITTEN ───────────────────────────────────────────────────────
+  // ─── FORTGESCHRITTEN ───────────────────────────────────────
 
   {
     id: 'pranayama_ratio',
     name: 'Pranayama 1:4:2',
-    description: 'Klassisches Yoga-Atemverhältnis. Tiefe Entspannung, geistige Klarheit.',
+    description: 'Das klassische Yoga-Verhältnis mit langer Atemhaltung. Tiefe Entspannung und Klarheit.',
+    effects: ['calming', 'lung_training'],
     isAdvanced: true,
     phases: [
       { label: 'Einatmen', seconds: 4, direction: 'up' },
@@ -146,11 +148,11 @@ export const BUILTIN_TECHNIQUES: BreathTechnique[] = [
       { label: 'Ausatmen', seconds: 8, direction: 'down' },
     ],
   },
-
   {
     id: 'bhastrika',
     name: 'Bhastrika (Blasebalg)',
-    description: 'Kraftvolle Pumpatmung aus dem Yoga. Stärker als Feueratmung. Reinigend und energetisierend.',
+    description: 'Kraftvolle Pumpatmung mit Retention. Weckt den ganzen Körper auf.',
+    effects: ['energizing', 'lung_training'],
     isAdvanced: true,
     phases: [
       { label: 'Einatmen (kräftig)', seconds: 2, direction: 'up' },
@@ -164,11 +166,11 @@ export const BUILTIN_TECHNIQUES: BreathTechnique[] = [
     ],
     rounds: 3,
   },
-
   {
     id: 'nadi_shodhana',
-    name: 'Nadi Shodhana (vereinfacht)',
-    description: 'Wechselatmung aus dem Yoga ohne Nasensteuerung. Balanciert beide Gehirnhälften.',
+    name: 'Nadi Shodhana',
+    description: 'Die Wechselatmung aus dem Yoga. Balanciert beide Gehirnhälften und zentriert.',
+    effects: ['balancing'],
     isAdvanced: true,
     phases: [
       { label: 'Einatmen links', seconds: 4, direction: 'up' },
@@ -179,74 +181,74 @@ export const BUILTIN_TECHNIQUES: BreathTechnique[] = [
       { label: 'Ausatmen links', seconds: 4, direction: 'down' },
     ],
   },
-
   {
     id: 'sudarshan_kriya',
-    name: 'Sudarshan Kriya (Basis)',
-    description: 'Sri Sri Ravi Shankar. Drei Geschwindigkeiten: langsam → mittel → schnell. Studiert bei Stress & Depression.',
+    name: 'Sudarshan Kriya',
+    description: 'Rhythmuswechsel von langsam zu schnell. In Studien wirksam bei Stress und gedrückter Stimmung.',
+    effects: ['balancing', 'energizing'],
     isAdvanced: true,
     phases: [
-      { label: 'Langsam — Einatmen', seconds: 3, direction: 'up' },
-      { label: 'Langsam — Ausatmen', seconds: 3, direction: 'down' },
-      { label: 'Langsam — Einatmen', seconds: 3, direction: 'up' },
-      { label: 'Langsam — Ausatmen', seconds: 3, direction: 'down' },
-      { label: 'Mittel — Einatmen', seconds: 2, direction: 'up' },
-      { label: 'Mittel — Ausatmen', seconds: 2, direction: 'down' },
-      { label: 'Mittel — Einatmen', seconds: 2, direction: 'up' },
-      { label: 'Mittel — Ausatmen', seconds: 2, direction: 'down' },
-      { label: 'Schnell — Einatmen', seconds: 1, direction: 'up' },
-      { label: 'Schnell — Ausatmen', seconds: 1, direction: 'down' },
-      { label: 'Schnell — Einatmen', seconds: 1, direction: 'up' },
-      { label: 'Schnell — Ausatmen', seconds: 1, direction: 'down' },
-      { label: 'Schnell — Einatmen', seconds: 1, direction: 'up' },
-      { label: 'Schnell — Ausatmen', seconds: 1, direction: 'down' },
+      { label: 'Langsam ein', seconds: 3, direction: 'up' },
+      { label: 'Langsam aus', seconds: 3, direction: 'down' },
+      { label: 'Langsam ein', seconds: 3, direction: 'up' },
+      { label: 'Langsam aus', seconds: 3, direction: 'down' },
+      { label: 'Mittel ein', seconds: 2, direction: 'up' },
+      { label: 'Mittel aus', seconds: 2, direction: 'down' },
+      { label: 'Mittel ein', seconds: 2, direction: 'up' },
+      { label: 'Mittel aus', seconds: 2, direction: 'down' },
+      { label: 'Schnell ein', seconds: 1, direction: 'up' },
+      { label: 'Schnell aus', seconds: 1, direction: 'down' },
+      { label: 'Schnell ein', seconds: 1, direction: 'up' },
+      { label: 'Schnell aus', seconds: 1, direction: 'down' },
+      { label: 'Schnell ein', seconds: 1, direction: 'up' },
+      { label: 'Schnell aus', seconds: 1, direction: 'down' },
       { label: 'Halten', seconds: 10, direction: 'right' },
     ],
     rounds: 3,
   },
-
   {
     id: 'co2_tolerance',
     name: 'CO₂-Toleranztraining',
-    description: 'Nach Buteyko & Patrick McKeown. Trainiert Chemorezepto­ren. Verbessert Ausdauer & Schlaf.',
+    description: 'Trainiert die Chemorezeptoren. Verbessert Ausdauer, Schlaf und Atemökonomie.',
+    effects: ['lung_training'],
     isAdvanced: true,
     phases: [
-      { label: 'Einatmen (nase)', seconds: 4, direction: 'up' },
-      { label: 'Ausatmen (nase)', seconds: 4, direction: 'down' },
-      { label: 'Einatmen (nase)', seconds: 4, direction: 'up' },
-      { label: 'Ausatmen (nase)', seconds: 4, direction: 'down' },
       { label: 'Einatmen', seconds: 4, direction: 'up' },
-      { label: 'Atem anhalten', seconds: 30, direction: 'right' },
+      { label: 'Ausatmen', seconds: 4, direction: 'down' },
+      { label: 'Einatmen', seconds: 4, direction: 'up' },
+      { label: 'Ausatmen', seconds: 4, direction: 'down' },
+      { label: 'Einatmen', seconds: 4, direction: 'up' },
+      { label: 'Anhalten', seconds: 30, direction: 'right' },
       { label: 'Ausatmen', seconds: 6, direction: 'down' },
-      { label: 'Normal atmen', seconds: 10, direction: 'up' },
+      { label: 'Erholen', seconds: 10, direction: 'up' },
     ],
     rounds: 5,
   },
-
   {
     id: 'kapalabhati',
     name: 'Kapalabhati',
-    description: 'Schädelatmung aus dem Yoga. Schnelle Pumpatmung + Retention. Reinigend, energetisierend.',
+    description: 'Die Schädelleuchten-Atmung. Schnelle Pumpstöße reinigen und energetisieren.',
+    effects: ['energizing', 'lung_training'],
     isAdvanced: true,
     phases: [
       { label: 'Einatmen', seconds: 1, direction: 'up' },
-      { label: 'Ausatmen (Pumpe)', seconds: 1, direction: 'down' },
+      { label: 'Pumpe', seconds: 1, direction: 'down' },
       { label: 'Einatmen', seconds: 1, direction: 'up' },
-      { label: 'Ausatmen (Pumpe)', seconds: 1, direction: 'down' },
+      { label: 'Pumpe', seconds: 1, direction: 'down' },
       { label: 'Einatmen', seconds: 1, direction: 'up' },
-      { label: 'Ausatmen (Pumpe)', seconds: 1, direction: 'down' },
+      { label: 'Pumpe', seconds: 1, direction: 'down' },
       { label: 'Einatmen', seconds: 1, direction: 'up' },
-      { label: 'Ausatmen (Pumpe)', seconds: 1, direction: 'down' },
+      { label: 'Pumpe', seconds: 1, direction: 'down' },
       { label: 'Einatmen', seconds: 1, direction: 'up' },
       { label: 'Retention', seconds: 20, direction: 'right' },
     ],
     rounds: 3,
   },
-
   {
     id: 'breath_of_fire',
     name: 'Feueratmung',
-    description: 'Kundalini-Technik. Kontinuierliche Pumpatmung. Aktiviert Energie, wärmt den Körper.',
+    description: 'Kontinuierliche Pumpatmung aus dem Kundalini Yoga. Erzeugt Wärme und Präsenz.',
+    effects: ['energizing'],
     isAdvanced: true,
     phases: [
       { label: 'Einatmen', seconds: 1, direction: 'up' },
@@ -260,13 +262,14 @@ export const BUILTIN_TECHNIQUES: BreathTechnique[] = [
     ],
   },
 
-  // ─── PROFI ─────────────────────────────────────────────────────────────────
+  // ─── PROFI ─────────────────────────────────────────────────
 
   {
     id: 'wim_hof',
     name: 'Wim Hof Methode',
-    description: '30 schnelle Atemzüge + lange Retention. Immun­system, Energie, Fokus.',
-    warning: '⚠️ NIEMALS im Wasser oder beim Fahren. Kann Ohnmacht verursachen. Nur in sicherer Umgebung im Liegen.',
+    description: 'Intensive Zyklen mit langer Retention. Für Energie, Fokus und Kältetoleranz.',
+    warning: '⚠️ NIEMALS im Wasser oder beim Fahren. Kann Ohnmacht verursachen. Nur im Liegen in sicherer Umgebung.',
+    effects: ['energizing'],
     isProfi: true,
     phases: [
       { label: 'Einatmen', seconds: 2, direction: 'up' },
@@ -282,12 +285,12 @@ export const BUILTIN_TECHNIQUES: BreathTechnique[] = [
     ],
     rounds: 3,
   },
-
   {
     id: 'tummo',
     name: 'Tummo (Inneres Feuer)',
-    description: 'Tibetisch-buddhistische Technik. Erzeugt Körperwärme, tiefe Meditation. Basis der Wim-Hof-Methode.',
-    warning: '⚠️ Nur in sicherer, warmer Umgebung im Liegen. Kann Schwindel und Kribbeln verursachen. Nicht bei Herzproblemen.',
+    description: 'Tibetische Technik für Körperwärme und tiefe Meditation. Der Ursprung der Wim-Hof-Methode.',
+    warning: '⚠️ Nur im Liegen in warmer, sicherer Umgebung. Kann Schwindel verursachen. Nicht bei Herzproblemen.',
+    effects: ['energizing'],
     isProfi: true,
     phases: [
       { label: 'Tief einatmen', seconds: 3, direction: 'up' },
@@ -304,12 +307,12 @@ export const BUILTIN_TECHNIQUES: BreathTechnique[] = [
     ],
     rounds: 4,
   },
-
   {
     id: 'holotropic_simplified',
-    name: 'Holotropes Atmen (vereinfacht)',
-    description: 'Nach Stanislav Grof. Schnelles verbundenes Atmen ohne Pausen. Veränderte Bewusstseinszustände möglich.',
-    warning: '⚠️ Kann starke emotionale Reaktionen, Kribbeln (Tetanie) und Ohnmacht verursachen. NUR mit einer Begleitperson. Nicht bei Herzproblemen, Epilepsie, Schwangerschaft oder psychischen Erkrankungen.',
+    name: 'Holotropes Atmen',
+    description: 'Schnelles verbundenes Atmen nach Grof. Kann veränderte Bewusstseinszustände auslösen.',
+    warning: '⚠️ Starke emotionale Reaktionen und Ohnmacht möglich. NUR mit Begleitperson. Nicht bei Herzproblemen, Epilepsie, Schwangerschaft oder psychischen Erkrankungen.',
+    effects: ['energizing'],
     isProfi: true,
     phases: [
       { label: 'Einatmen', seconds: 2, direction: 'up' },
@@ -327,12 +330,12 @@ export const BUILTIN_TECHNIQUES: BreathTechnique[] = [
     ],
     rounds: 5,
   },
-
   {
     id: 'pranayama_extended',
-    name: 'Pranayama Erweitert (1:8:4)',
-    description: 'Fortgeschrittenes Yoga-Verhältnis mit sehr langer Retention. Tiefste Entspannung und Bewusstseinserweiterung.',
-    warning: '⚠️ Sehr lange Atemhaltung. Nur nach Wochen/Monaten Erfahrung mit kürzeren Verhältnissen. Nicht bei Bluthochdruck oder Herzproblemen.',
+    name: 'Pranayama 1:8:4',
+    description: 'Sehr lange Atemhaltung für erfahrene Praktizierende. Tiefste Stille.',
+    warning: '⚠️ Nur nach monatelanger Erfahrung mit kürzeren Verhältnissen. Nicht bei Bluthochdruck oder Herzproblemen.',
+    effects: ['calming', 'lung_training'],
     isProfi: true,
     phases: [
       { label: 'Einatmen', seconds: 4, direction: 'up' },
@@ -340,12 +343,12 @@ export const BUILTIN_TECHNIQUES: BreathTechnique[] = [
       { label: 'Ausatmen', seconds: 16, direction: 'down' },
     ],
   },
-
   {
     id: 'rebirthing',
     name: 'Verbundenes Atmen',
-    description: 'Nach Leonard Orr (Rebirthing). Kontinuierliches Atmen ohne Pause zwischen Ein- und Ausatmen. Emotionale Befreiung.',
-    warning: '⚠️ Kann intensive emotionale Erlebnisse, Kribbeln und Tetanie auslösen. Begleitperson empfohlen. Nicht bei psychischen Erkrankungen.',
+    description: 'Kreisförmiges Atmen ohne Pausen nach Leonard Orr. Emotionale Tiefenarbeit.',
+    warning: '⚠️ Kann intensive Emotionen und Kribbeln auslösen. Begleitperson empfohlen. Nicht bei psychischen Erkrankungen.',
+    effects: ['balancing'],
     isProfi: true,
     phases: [
       { label: 'Einatmen', seconds: 3, direction: 'up' },
@@ -359,5 +362,4 @@ export const BUILTIN_TECHNIQUES: BreathTechnique[] = [
     ],
     rounds: 10,
   },
-
 ];

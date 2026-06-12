@@ -10,10 +10,14 @@ interface SettingsStore {
   soundType: SoundType;
   spotifyUri: string;
   spotifyEnabled: boolean;
+  introOutroEnabled: boolean;
+  hapticsEnabled: boolean;
   setTheme: (t: Theme) => void;
   setSoundType: (s: SoundType) => void;
   setSpotifyUri: (uri: string) => void;
   setSpotifyEnabled: (v: boolean) => void;
+  setIntroOutroEnabled: (v: boolean) => void;
+  setHapticsEnabled: (v: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -23,10 +27,14 @@ export const useSettingsStore = create<SettingsStore>()(
       soundType: 'none',
       spotifyUri: '',
       spotifyEnabled: false,
+      introOutroEnabled: true,
+      hapticsEnabled: true,
       setTheme: (theme) => set({ theme }),
       setSoundType: (soundType) => set({ soundType }),
       setSpotifyUri: (spotifyUri) => set({ spotifyUri }),
       setSpotifyEnabled: (spotifyEnabled) => set({ spotifyEnabled }),
+      setIntroOutroEnabled: (introOutroEnabled) => set({ introOutroEnabled }),
+      setHapticsEnabled: (hapticsEnabled) => set({ hapticsEnabled }),
     }),
     {
       name: 'breathflow-settings',

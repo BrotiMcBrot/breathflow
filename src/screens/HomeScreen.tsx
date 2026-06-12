@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Modal } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView, Modal } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useBreathStore } from '../store/breathStore';
-import { BreathTechnique, SessionSettings } from '../types';
+import { BreathTechnique, SessionSettings, Effect, EFFECT_META } from '../types';
 import { getTotalSeconds } from '../utils/pathGeometry';
 import { SessionSettingsModal } from '../components/SessionSettingsModal';
+import { TechniqueCurvePreview } from '../components/TechniqueCurvePreview';
 import { useTheme, Colors } from '../theme';
 
 function SectionLabel({ title, color, c }: { title: string; color?: string; c: Colors }) {
@@ -16,7 +18,7 @@ function SectionLabel({ title, color, c }: { title: string; color?: string; c: C
   );
 }
 const sS = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8, marginBottom: 12 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10, marginBottom: 12 },
   title: { fontSize: 12, letterSpacing: 1, textTransform: 'uppercase' },
   line: { flex: 1, height: 0.5 },
 });
@@ -25,62 +27,68 @@ function TechniqueCard({ item, onPress, c }: { item: BreathTechnique; onPress: (
   const totalSecs = getTotalSeconds(item.phases);
   const badgeColor = item.isProfi ? '#dc2626' : item.isAdvanced ? c.hold : c.down;
   const badgeLabel = item.isProfi ? 'Profi' : item.isCustom ? 'Eigene' : item.isAdvanced ? 'Fortgeschritten' : null;
+  const curveColor = item.isProfi ? '#dc2626' : c.accent;
 
   return (
     <TouchableOpacity
       style={[cS.card, { backgroundColor: c.surface, borderColor: item.isProfi ? '#dc262630' : c.border }]}
       onPress={onPress} activeOpacity={0.75}
     >
-      <View style={cS.top}>
-        <Text style={[cS.name, { color: c.textSec }]}>{item.name}</Text>
-        {badgeLabel && (
-          <View style={[cS.badge, { backgroundColor: badgeColor + '20', borderColor: badgeColor + '50' }]}>
-            <Text style={[cS.badgeTxt, { color: badgeColor }]}>{badgeLabel}</Text>
+      <View style={cS.row}>
+        <View style={cS.left}>
+          <View style={cS.top}>
+            <Text style={[cS.name, { color: c.textSec }]} numberOfLines={1}>{item.name}</Text>
           </View>
-        )}
+          <Text style={[cS.desc, { color: c.textMuted }]} numberOfLines={2}>{item.description}</Text>
+          <View style={cS.metaRow}>
+            {badgeLabel && (
+              <View style={[cS.badge, { backgroundColor: badgeColor + '18', borderColor: badgeColor + '45' }]}>
+                <Text style={[cS.badgeTxt, { color: badgeColor }]}>{badgeLabel}</Text>
+              </View>
+            )}
+            {item.effects.slice(0, 2).map((e) => (
+              <View key={e} style={[cS.badge, { backgroundColor: EFFECT_META[e].color + '15', borderColor: EFFECT_META[e].color + '40' }]}>
+                <Text style={[cS.badgeTxt, { color: EFFECT_META[e].color }]}>
+                  {EFFECT_META[e].emoji} {EFFECT_META[e].label}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+        <View style={cS.right}>
+          <TechniqueCurvePreview
+            phases={item.phases}
+            color={curveColor}
+            ghostColor={c.trailGhost}
+            width={92}
+            height={52}
+          />
+          <Text style={[cS.secs, { color: c.textFaint }]}>{totalSecs}s</Text>
+        </View>
       </View>
-      <Text style={[cS.desc, { color: c.textMuted }]} numberOfLines={2}>{item.description}</Text>
       {item.warning && (
-        <Text style={[cS.warning, { color: '#dc2626' }]} numberOfLines={2}>{item.warning}</Text>
+        <Text style={[cS.warning, { color: '#dc2626' }]} numberOfLines={1}>{item.warning}</Text>
       )}
-      <View style={cS.pills}>
-        {item.phases.slice(0, 5).map((p, i) => {
-          const col = p.direction === 'up' ? c.up : p.direction === 'right' ? c.hold : c.down;
-          return (
-            <View key={i} style={[cS.pill, { borderColor: col + '60', backgroundColor: col + '18' }]}>
-              <Text style={[cS.pillTxt, { color: col }]}>{p.label} {p.seconds}s</Text>
-            </View>
-          );
-        })}
-        {item.phases.length > 5 && (
-          <View style={[cS.morePill, { borderColor: c.border }]}>
-            <Text style={[cS.moreTxt, { color: c.textFaint }]}>+{item.phases.length - 5}</Text>
-          </View>
-        )}
-      </View>
-      <Text style={[cS.secs, { color: c.textFaint }]}>{totalSecs}s / Runde</Text>
     </TouchableOpacity>
   );
 }
 const cS = StyleSheet.create({
-  card: { borderRadius: 16, padding: 18, marginBottom: 12, borderWidth: 0.5 },
-  top: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' },
-  name: { fontSize: 18, fontWeight: '500', flex: 1 },
-  badge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 0.5 },
-  badgeTxt: { fontSize: 11, fontWeight: '500' },
-  desc: { fontSize: 14, lineHeight: 20, marginBottom: 8 },
-  warning: { fontSize: 12, lineHeight: 16, marginBottom: 8, fontWeight: '500' },
-  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 },
-  pill: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 0.5 },
-  pillTxt: { fontSize: 11, fontWeight: '500' },
-  morePill: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 0.5 },
-  moreTxt: { fontSize: 11 },
-  secs: { fontSize: 12 },
+  card: { borderRadius: 16, padding: 16, marginBottom: 10, borderWidth: 0.5 },
+  row: { flexDirection: 'row', gap: 12 },
+  left: { flex: 1 },
+  right: { alignItems: 'center', justifyContent: 'center', gap: 2 },
+  top: { marginBottom: 4 },
+  name: { fontSize: 17, fontWeight: '500' },
+  desc: { fontSize: 13, lineHeight: 18, marginBottom: 8 },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+  badge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2.5, borderWidth: 0.5 },
+  badgeTxt: { fontSize: 10.5, fontWeight: '500' },
+  warning: { fontSize: 11.5, marginTop: 8, fontWeight: '500' },
+  secs: { fontSize: 11 },
 });
 
-// Warning confirm modal for Profi techniques
-function ProfiWarningModal({ technique, onConfirm, onCancel, c }: {
-  technique: BreathTechnique; onConfirm: () => void; onCancel: () => void; c: Colors;
+function ProfiWarningModal({ technique, onConfirm, onCancel, c, bottomInset }: {
+  technique: BreathTechnique; onConfirm: () => void; onCancel: () => void; c: Colors; bottomInset: number;
 }) {
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onCancel}>
@@ -114,23 +122,51 @@ const wS = StyleSheet.create({
   cancelTxt: { fontSize: 15 },
 });
 
+const FILTERS: { key: Effect | 'all'; label: string; emoji: string }[] = [
+  { key: 'all', label: 'Alle', emoji: '✨' },
+  { key: 'calming', label: 'Beruhigend', emoji: '🌙' },
+  { key: 'energizing', label: 'Energie', emoji: '⚡' },
+  { key: 'lung_training', label: 'Lungen', emoji: '🫁' },
+  { key: 'balancing', label: 'Balance', emoji: '⚖️' },
+];
+
 export default function HomeScreen() {
   const c = useTheme();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { techniques } = useBreathStore();
+  const { techniques, sessions } = useBreathStore();
   const [selected, setSelected] = useState<BreathTechnique | null>(null);
   const [showWarning, setShowWarning] = useState<BreathTechnique | null>(null);
+  const [filter, setFilter] = useState<Effect | 'all'>('all');
 
-  const beginner = techniques.filter((t) => !t.isAdvanced && !t.isProfi);
-  const advanced = techniques.filter((t) => t.isAdvanced && !t.isProfi);
-  const profi = techniques.filter((t) => t.isProfi);
+  // last used technique
+  const lastUsed = useMemo(() => {
+    if (!sessions.length) return null;
+    return techniques.find((t) => t.id === sessions[0].techniqueId) ?? null;
+  }, [sessions, techniques]);
+
+  const filtered = useMemo(() => {
+    if (filter === 'all') return techniques;
+    return techniques.filter((t) => t.effects?.includes(filter) || t.isCustom);
+  }, [techniques, filter]);
+
+  const beginner = filtered.filter((t) => !t.isAdvanced && !t.isProfi);
+  const advanced = filtered.filter((t) => t.isAdvanced && !t.isProfi);
+  const profi = filtered.filter((t) => t.isProfi);
 
   type Item =
     | { type: 'header'; key: string; title: string; color?: string }
     | { type: 'technique'; key: string; item: BreathTechnique };
 
   const listData: Item[] = [
-    ...beginner.map((t) => ({ type: 'technique' as const, key: t.id, item: t })),
+    ...(lastUsed && filter === 'all' ? [
+      { type: 'header' as const, key: 'h_last', title: 'Zuletzt geübt' },
+      { type: 'technique' as const, key: `last_${lastUsed.id}`, item: lastUsed },
+    ] : []),
+    ...(beginner.length > 0 ? [
+      { type: 'header' as const, key: 'h_beg', title: 'Techniken' },
+      ...beginner.map((t) => ({ type: 'technique' as const, key: t.id, item: t })),
+    ] : []),
     ...(advanced.length > 0 ? [
       { type: 'header' as const, key: 'h_adv', title: 'Fortgeschritten', color: c.hold },
       ...advanced.map((t) => ({ type: 'technique' as const, key: t.id, item: t })),
@@ -142,11 +178,8 @@ export default function HomeScreen() {
   ];
 
   const handleCardPress = (t: BreathTechnique) => {
-    if (t.isProfi) {
-      setShowWarning(t);
-    } else {
-      setSelected(t);
-    }
+    if (t.isProfi) setShowWarning(t);
+    else setSelected(t);
   };
 
   const handleStart = (settings: SessionSettings) => {
@@ -162,13 +195,37 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
-      <View style={[styles.header]}>
+    <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top + 8 }}>
+      <View style={styles.header}>
         <Text style={[styles.logo, { color: c.text }]}>breathflow</Text>
         <TouchableOpacity onPress={() => router.push('/editor')}
           style={[styles.addBtn, { backgroundColor: c.accentBg, borderColor: c.accentBorder }]}>
-          <Text style={[styles.addBtnTxt, { color: c.accent }]}>+ Neue Technik</Text>
+          <Text style={[styles.addBtnTxt, { color: c.accent }]}>+ Neu</Text>
         </TouchableOpacity>
+      </View>
+
+      {/* Effect filters */}
+      <View style={styles.filterWrap}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+          {FILTERS.map((f) => {
+            const active = filter === f.key;
+            const fColor = f.key === 'all' ? c.accent : EFFECT_META[f.key as Effect].color;
+            return (
+              <TouchableOpacity
+                key={f.key}
+                style={[
+                  styles.filterChip,
+                  { backgroundColor: active ? fColor + '20' : c.surface, borderColor: active ? fColor + '60' : c.border },
+                ]}
+                onPress={() => setFilter(f.key)}
+              >
+                <Text style={[styles.filterTxt, { color: active ? fColor : c.textMuted }]}>
+                  {f.emoji} {f.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       <FlatList
@@ -184,29 +241,32 @@ export default function HomeScreen() {
 
       {showWarning && (
         <ProfiWarningModal
-          technique={showWarning}
-          c={c}
+          technique={showWarning} c={c} bottomInset={insets.bottom}
           onConfirm={() => { setSelected(showWarning); setShowWarning(null); }}
           onCancel={() => setShowWarning(null)}
         />
       )}
-
       {selected && (
         <SessionSettingsModal
-          visible={true}
-          techniqueName={selected.name}
-          onStart={handleStart}
-          onCancel={() => setSelected(null)}
+          visible={true} techniqueName={selected.name}
+          onStart={handleStart} onCancel={() => setSelected(null)}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 20, paddingBottom: 16 },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingBottom: 12,
+  },
   logo: { fontSize: 22, fontWeight: '300', letterSpacing: 2 },
   addBtn: { borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6, borderWidth: 0.5 },
   addBtnTxt: { fontSize: 14 },
-  list: { paddingHorizontal: 24, paddingBottom: 40, paddingTop: 12 },
+  filterWrap: { marginBottom: 4 },
+  filterRow: { paddingHorizontal: 20, gap: 8 },
+  filterChip: { borderRadius: 99, paddingHorizontal: 14, paddingVertical: 7, borderWidth: 0.5 },
+  filterTxt: { fontSize: 13, fontWeight: '500' },
+  list: { paddingHorizontal: 20, paddingBottom: 24, paddingTop: 8 },
 });
