@@ -90,4 +90,4 @@ MIT — siehe [LICENSE](LICENSE)
 
 ---
 
-<sub>Made with 🫁 by <a href="https://nami-sailing.de">Denis @ Nami Sailing</a></sub>
+<sub>Made with 🫁 by Broti</a></sub>
