@@ -7,18 +7,6 @@ Open-source Atem-App für iOS & Android. Geführte Atemübungen mit einer einzig
 
 ---
 
-## ☕ Projekt unterstützen
-
-BreathFlow ist komplett kostenlos und open source. Wenn dir die App gefällt:
-
-<a href="https://ko-fi.com/brotimcbrot" target="_blank">
-  <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Ko-fi" />
-</a>
-<a href="https://liberapay.com/BrotiMcBrot/donate" target="_blank">
-  <img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg" />
-</a>
-
----
 
 ## Features
 
@@ -83,6 +71,17 @@ breathflow/
 → [CONTRIBUTING.md](CONTRIBUTING.md) — Übersetzungen, neue Techniken, Bugs
 
 → [Discussions](https://github.com/BrotiMcBrot/breathflow/discussions) — Ideen & Feedback ohne Git
+
+## ☕ Projekt unterstützen
+
+BreathFlow ist komplett kostenlos und open source. Wenn dir die App gefällt:
+
+<a href="https://ko-fi.com/brotimcbrot" target="_blank">
+  <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Ko-fi" />
+</a>
+<a href="https://liberapay.com/BrotiMcBrot/donate" target="_blank">
+  <img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg" />
+</a>
 
 ## Lizenz
 
