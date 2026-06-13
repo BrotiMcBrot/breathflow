@@ -7,9 +7,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettingsStore, SoundType } from '../store/settingsStore';
 import { useTheme, Colors } from '../theme';
 import { useT } from '../i18n';
+import { ensureNotificationPermissions, scheduleReminder, cancelReminder, ReminderSlot } from '../utils/notifications';
 
 const SOUND_OPTIONS: SoundType[] = ['none', 'gong', 'bell', 'bowl'];
 const KOFI_URL = 'https://ko-fi.com/brotimcbrot';
+const LIBERAPAY_URL = 'https://liberapay.com/BrotiMcBrot/donate';
 const GITHUB_URL = 'https://github.com/BrotiMcBrot/breathflow';
 
 function Row({ label, children, c, last }: { label: string; children: React.ReactNode; c: Colors; last?: boolean }) {
@@ -34,12 +36,25 @@ export default function SettingsScreen() {
     theme, setTheme, language, setLanguage, soundType, setSoundType,
     spotifyUri, setSpotifyUri, spotifyEnabled, setSpotifyEnabled,
     introOutroEnabled, setIntroOutroEnabled, hapticsEnabled, setHapticsEnabled,
+    reminderMorning, reminderNoon, reminderEvening, setReminder,
   } = useSettingsStore();
   const [spotifyInput, setSpotifyInput] = useState(spotifyUri);
+  const [spotifyOpen, setSpotifyOpen] = useState(false);
   const s = makeStyles(c);
 
   const soundLabels: Record<SoundType, string> = {
     none: t.soundNone, gong: t.soundGong, bell: t.soundBell, bowl: t.soundBowl,
+  };
+
+  const toggleReminder = async (slot: ReminderSlot, value: boolean) => {
+    if (value) {
+      const ok = await ensureNotificationPermissions();
+      if (!ok) { Alert.alert(t.notifPermission, t.notifPermissionMsg); return; }
+      await scheduleReminder(slot, t.reminderTitle, t.reminderBody);
+    } else {
+      await cancelReminder(slot);
+    }
+    setReminder(slot, value);
   };
 
   const openSpotify = () => {
@@ -84,6 +99,23 @@ export default function SettingsScreen() {
           </Row>
         </View>
 
+        {/* REMINDERS */}
+        <Text style={s.section}>{t.reminders}</Text>
+        <View style={s.card}>
+          <Row label={t.reminderMorning} c={c}>
+            <Switch value={reminderMorning} onValueChange={(v) => toggleReminder('morning', v)}
+              trackColor={{ false: c.border, true: c.accent }} thumbColor={c.surface} />
+          </Row>
+          <Row label={t.reminderNoon} c={c}>
+            <Switch value={reminderNoon} onValueChange={(v) => toggleReminder('noon', v)}
+              trackColor={{ false: c.border, true: c.accent }} thumbColor={c.surface} />
+          </Row>
+          <Row label={t.reminderEvening} c={c} last>
+            <Switch value={reminderEvening} onValueChange={(v) => toggleReminder('evening', v)}
+              trackColor={{ false: c.border, true: c.accent }} thumbColor={c.surface} />
+          </Row>
+        </View>
+
         {/* APPEARANCE */}
         <Text style={s.section}>{t.appearance}</Text>
         <View style={s.card}>
@@ -114,27 +146,35 @@ export default function SettingsScreen() {
           ))}
         </View>
 
-        {/* MUSIC */}
+        {/* MUSIC (collapsed) */}
         <Text style={s.section}>{t.music}</Text>
         <View style={s.card}>
-          <Row label={t.spotifyOnStart} c={c}>
-            <Switch value={spotifyEnabled} onValueChange={setSpotifyEnabled}
-              trackColor={{ false: c.border, true: c.accent }} thumbColor={c.surface} />
-          </Row>
-          <View style={[s.spotifyUriWrap, { borderBottomColor: c.border }]}>
-            <Text style={[s.spotifyUriLabel, { color: c.textMuted }]}>Spotify URI</Text>
-            <TextInput
-              style={[s.spotifyInput, { color: c.text, borderColor: c.border, backgroundColor: c.elevated }]}
-              value={spotifyInput} onChangeText={setSpotifyInput}
-              onBlur={() => setSpotifyUri(spotifyInput.trim())}
-              placeholder="spotify:playlist:..." placeholderTextColor={c.textFaint}
-              autoCapitalize="none" autoCorrect={false}
-            />
-            <Text style={[s.spotifyHint, { color: c.textFaint }]}>{t.spotifyHint}</Text>
-          </View>
-          <TouchableOpacity style={[s.spotifyBtn, { backgroundColor: '#1DB954' }]} onPress={openSpotify}>
-            <Text style={s.spotifyBtnTxt}>{t.openSpotify}</Text>
+          <TouchableOpacity style={s.collapseHead} onPress={() => setSpotifyOpen((v) => !v)}>
+            <Text style={[s.collapseTitle, { color: c.text }]}>🎵 Spotify</Text>
+            <Text style={{ color: c.textFaint, fontSize: 16 }}>{spotifyOpen ? '▾' : '▸'}</Text>
           </TouchableOpacity>
+          {spotifyOpen && (
+            <>
+              <Row label={t.spotifyOnStart} c={c}>
+                <Switch value={spotifyEnabled} onValueChange={setSpotifyEnabled}
+                  trackColor={{ false: c.border, true: c.accent }} thumbColor={c.surface} />
+              </Row>
+              <View style={[s.spotifyUriWrap, { borderBottomColor: c.border }]}>
+                <Text style={[s.spotifyUriLabel, { color: c.textMuted }]}>Spotify URI</Text>
+                <TextInput
+                  style={[s.spotifyInput, { color: c.text, borderColor: c.border, backgroundColor: c.elevated }]}
+                  value={spotifyInput} onChangeText={setSpotifyInput}
+                  onBlur={() => setSpotifyUri(spotifyInput.trim())}
+                  placeholder="spotify:playlist:..." placeholderTextColor={c.textFaint}
+                  autoCapitalize="none" autoCorrect={false}
+                />
+                <Text style={[s.spotifyHint, { color: c.textFaint }]}>{t.spotifyHint}</Text>
+              </View>
+              <TouchableOpacity style={[s.spotifyBtn, { backgroundColor: '#1DB954' }]} onPress={openSpotify}>
+                <Text style={s.spotifyBtnTxt}>{t.openSpotify}</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         {/* SUPPORT */}
@@ -144,6 +184,9 @@ export default function SettingsScreen() {
           <Text style={[s.supportDesc, { color: c.textMuted }]}>{t.supportDesc}</Text>
           <TouchableOpacity style={s.kofiBtn} onPress={() => Linking.openURL(KOFI_URL)} activeOpacity={0.85}>
             <Text style={s.kofiBtnTxt}>{t.kofiBtn}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.liberapayBtn} onPress={() => Linking.openURL(LIBERAPAY_URL)} activeOpacity={0.85}>
+            <Text style={s.liberapayBtnTxt}>{t.liberapayBtn}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[s.githubBtn, { backgroundColor: c.elevated, borderColor: c.border }]}
             onPress={() => Linking.openURL(GITHUB_URL)} activeOpacity={0.85}>
@@ -155,7 +198,7 @@ export default function SettingsScreen() {
         <Text style={s.section}>{t.app}</Text>
         <View style={s.card}>
           <Row label={t.version} c={c}>
-            <Text style={[rS.label, { color: c.textFaint }]}>1.2.0</Text>
+            <Text style={[rS.label, { color: c.textFaint }]}>1.3.0</Text>
           </Row>
           <Row label={t.openSource} c={c}>
             <TouchableOpacity onPress={() => Linking.openURL(GITHUB_URL)}>
@@ -200,6 +243,10 @@ function makeStyles(c: Colors) {
     supportTitle: { fontSize: 16, fontWeight: '500', marginBottom: 6 },
     supportDesc: { fontSize: 14, lineHeight: 20, marginBottom: 18 },
     kofiBtn: { backgroundColor: '#FF5E5B', borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginBottom: 10 },
+    liberapayBtn: { backgroundColor: '#F6C915', borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginBottom: 10 },
+    liberapayBtnTxt: { color: '#1a1a1a', fontSize: 16, fontWeight: '600' },
+    collapseHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 15 },
+    collapseTitle: { fontSize: 15, fontWeight: '500' },
     kofiBtnTxt: { color: '#fff', fontSize: 16, fontWeight: '600' },
     githubBtn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center', borderWidth: 0.5 },
     githubBtnTxt: { fontSize: 15, fontWeight: '500' },

@@ -51,6 +51,8 @@ export default function SessionScreen() {
   const [state, setState] = useState<SessionState>('idle');
   const [introStep, setIntroStep] = useState(0);
   const [currentPhase, setCurrentPhase] = useState('');
+  const [currentDir, setCurrentDir] = useState<'up'|'down'|'right'>('up');
+  const [nextPhase, setNextPhase] = useState('');
   const [secsRemaining, setSecsRemaining] = useState(0);
   const [rounds, setRounds] = useState(0);
   const [elapsed, setElapsed] = useState(0);
@@ -98,7 +100,8 @@ export default function SessionScreen() {
       if (mode === 'time' && sessionElapsed >= targetTotalSecs) { finishSession(true); return; }
 
       let el = 0;
-      for (const phase of technique.phases) {
+      for (let pi = 0; pi < technique.phases.length; pi++) {
+        const phase = technique.phases[pi];
         if (tt <= el + phase.seconds) {
           if (phase.label !== lastPhaseRef.current) {
             lastPhaseRef.current = phase.label;
@@ -108,6 +111,8 @@ export default function SessionScreen() {
             }
           }
           setCurrentPhase(phase.label);
+          setCurrentDir(phase.direction);
+          setNextPhase(technique.phases[(pi + 1) % technique.phases.length].label);
           setSecsRemaining(Math.ceil(el + phase.seconds - tt));
           break;
         }
@@ -279,12 +284,28 @@ export default function SessionScreen() {
       </View>
 
       <View style={styles.phaseWrap}>
-        <Text style={[styles.phaseLabel, { color: c.text }]}>
-          {isRunning ? currentPhase : (sessionStartRef.current ? t.pauseLabel : technique.name)}
-        </Text>
-        <Text style={[styles.phaseSecs, { color: c.textMuted }]} numberOfLines={2}>
-          {isRunning ? `${secsRemaining}` : technique.description}
-        </Text>
+        {isRunning ? (
+          <>
+            <Text style={[styles.phaseLabel, { color: c.text }]}>
+              {currentDir === 'up' ? '👃 ' : currentDir === 'down' ? '👄 ' : '⏸ '}{currentPhase}
+            </Text>
+            <Text style={[styles.phaseOrgan, { color: c.textMuted }]}>
+              {currentDir === 'up' ? t.throughNose : currentDir === 'down' ? t.throughMouth : t.holdIt} · {secsRemaining}
+            </Text>
+            {nextPhase ? (
+              <Text style={[styles.phaseNext, { color: c.textFaint }]}>{t.next}: {nextPhase}</Text>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <Text style={[styles.phaseLabel, { color: c.text }]}>
+              {sessionStartRef.current ? t.pauseLabel : technique.name}
+            </Text>
+            <Text style={[styles.phaseSecs, { color: c.textMuted }]} numberOfLines={2}>
+              {technique.description}
+            </Text>
+          </>
+        )}
       </View>
 
       <View style={styles.controls}>
@@ -312,9 +333,11 @@ const styles = StyleSheet.create({
   progressBg: { height: 2, marginHorizontal: 20, borderRadius: 1 },
   progressFill: { height: 2, borderRadius: 1 },
   canvasWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  phaseWrap: { alignItems: 'center', paddingHorizontal: 24, minHeight: 86 },
+  phaseWrap: { alignItems: 'center', paddingHorizontal: 24, minHeight: 104 },
   phaseLabel: { fontSize: 30, fontWeight: '300', letterSpacing: 1 },
   phaseSecs: { fontSize: 16, marginTop: 4, textAlign: 'center' },
+  phaseOrgan: { fontSize: 16, marginTop: 4, textAlign: 'center' },
+  phaseNext: { fontSize: 13, marginTop: 8, textAlign: 'center' },
   controls: { paddingHorizontal: 20, paddingTop: 8 },
   playBtn: { borderRadius: 16, paddingVertical: 17, alignItems: 'center' },
   playTxt: { color: '#fff', fontSize: 18, fontWeight: '500' },

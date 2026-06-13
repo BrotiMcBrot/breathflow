@@ -14,6 +14,9 @@ interface SettingsStore {
   spotifyEnabled: boolean;
   introOutroEnabled: boolean;
   hapticsEnabled: boolean;
+  reminderMorning: boolean;
+  reminderNoon: boolean;
+  reminderEvening: boolean;
   setTheme: (t: Theme) => void;
   setLanguage: (l: Language) => void;
   setSoundType: (s: SoundType) => void;
@@ -21,6 +24,7 @@ interface SettingsStore {
   setSpotifyEnabled: (v: boolean) => void;
   setIntroOutroEnabled: (v: boolean) => void;
   setHapticsEnabled: (v: boolean) => void;
+  setReminder: (slot: 'morning' | 'noon' | 'evening', v: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -33,6 +37,9 @@ export const useSettingsStore = create<SettingsStore>()(
       spotifyEnabled: false,
       introOutroEnabled: true,
       hapticsEnabled: true,
+      reminderMorning: false,
+      reminderNoon: false,
+      reminderEvening: false,
       setTheme: (theme) => set({ theme }),
       setLanguage: (language) => set({ language }),
       setSoundType: (soundType) => set({ soundType }),
@@ -40,6 +47,11 @@ export const useSettingsStore = create<SettingsStore>()(
       setSpotifyEnabled: (spotifyEnabled) => set({ spotifyEnabled }),
       setIntroOutroEnabled: (introOutroEnabled) => set({ introOutroEnabled }),
       setHapticsEnabled: (hapticsEnabled) => set({ hapticsEnabled }),
+      setReminder: (slot, v) => set(
+        slot === 'morning' ? { reminderMorning: v }
+        : slot === 'noon' ? { reminderNoon: v }
+        : { reminderEvening: v }
+      ),
     }),
     { name: 'breathflow-settings', storage: createJSONStorage(() => AsyncStorage) }
   )

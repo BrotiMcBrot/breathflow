@@ -3,7 +3,7 @@
     "name": "BreathFlow",
     "slug": "breathflow",
     "scheme": "breathflow",
-    "version": "1.0.0",
+    "version": "1.3.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "splash": {
@@ -17,6 +17,7 @@
       "package": "com.breathflow.app",
       "versionCode": 1,
       "adaptiveIcon": {
+        "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#0a0a0f"
       }
     },
@@ -33,7 +34,8 @@
         {
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true
@@ -42,6 +44,7 @@
       "eas": {
         "projectId": "e8190c16-7ae3-4feb-9df6-6d498495eb36"
       }
-    }
+    },
+    "icon": "./src/assets/icon.png"
   }
 }
